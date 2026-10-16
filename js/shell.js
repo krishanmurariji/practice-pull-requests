@@ -75,16 +75,10 @@
     : '<h1>' + pageTitle + '</h1>';
   var head = body.dataset.nohead ? "" : '<div class="page-head' + (body.dataset.compact ? " compact" : "") + (body.dataset.ruled ? " ruled" : "") + '">' + titleHtml + '<div class="actions" id="head-actions"></div></div>';
 
-  /* ---- the module's pages as tabs across the top of the page (Metronic layout 3) ---- */
-  var tabsHtml = !mod.items.length ? "" : '<nav class="tabbar" aria-label="' + mod.label + ' pages"><span class="tb-mod">' + iconLine(mod.icon) + mod.label + '</span><div class="tb-tabs">' +
-    mod.items.map(function (it) {
-      return it.href ? '<a class="tb' + (it.id === pageId ? " on" : "") + '" href="' + it.href + '">' + it.label + '</a>' : '<span class="tb off" title="Not designed in this prototype">' + it.label + '</span>';
-    }).join("") + '</div></nav>';
-
   /* ---- assemble ---- */
   var app = document.createElement("div");
   app.className = "app";
-  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + tabsHtml + head + '</div></div>';
+  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + head + '</div></div>';
   body.insertBefore(app, main);
   document.getElementById("content").appendChild(main);
   /* move the real buttons (not a copy), so the click handlers the page attached keep working */
@@ -92,7 +86,7 @@
   var sb = document.getElementById("sb"), menu = document.getElementById("sbMenu");
 
   /* ---- the strip is icon-only (Metronic layout 3): names show as a dark tag on hover; on a small screen the burger opens it with names ---- */
-  var leaveTimer = null, tipEl = null;
+  var leaveTimer = null, tipEl = null, flyEl = null, flyAnchor = null, flyTimer = null;
   function expand(on) { if (!small) { return; } sb.classList.toggle("expanded", on); }
   function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; } }
   function showTip(el) {
@@ -100,8 +94,34 @@
     var r = el.getBoundingClientRect(); tipEl = document.createElement("div"); tipEl.className = "tip"; tipEl.textContent = el.dataset.tip; document.body.appendChild(tipEl);
     tipEl.style.left = (r.right + 10) + "px"; tipEl.style.top = (r.top + r.height / 2 - tipEl.offsetHeight / 2) + "px";
   }
-  document.addEventListener("mouseover", function (e) { var t = e.target.closest(".sb [data-tip]"); if (t) { showTip(t); } else { hideTip(); } });
-  document.addEventListener("click", hideTip, true);
+  /* a module's pages open as a small card beside its icon (stays open while the pointer is on the icon or the card) */
+  function hideFly() { clearTimeout(flyTimer); if (flyEl) { flyEl.remove(); flyEl = null; flyAnchor = null; } }
+  function holdFly() { clearTimeout(flyTimer); }
+  function dropFly() { clearTimeout(flyTimer); flyTimer = setTimeout(hideFly, 180); }
+  function showFly(btn, m) {
+    holdFly(); if (flyAnchor === btn) { return; }
+    hideTip(); hideFly();
+    flyEl = document.createElement("div"); flyEl.className = "fly"; flyEl.setAttribute("role", "menu");
+    flyEl.innerHTML = '<div class="fly-h"><span class="fly-ic">' + iconLine(m.icon) + '</span><b>' + m.label + '</b></div><div class="fly-l">' +
+      m.items.map(function (it) {
+        var on = m.id === moduleId && it.id === pageId;
+        return it.href ? '<a class="fi' + (on ? " on" : "") + '" href="' + it.href + '">' + it.label + '</a>' : '<span class="fi off" title="Not designed in this prototype">' + it.label + '</span>';
+      }).join("") + '</div>';
+    document.body.appendChild(flyEl); flyAnchor = btn;
+    var r = btn.getBoundingClientRect();
+    flyEl.style.left = (r.right + 10) + "px";
+    flyEl.style.top = Math.max(8, Math.min(r.top - 8, window.innerHeight - flyEl.offsetHeight - 8)) + "px";
+    flyEl.addEventListener("mouseenter", holdFly); flyEl.addEventListener("mouseleave", dropFly);
+  }
+  document.addEventListener("mouseover", function (e) {
+    if (small) { return; }
+    if (e.target.closest(".fly")) { holdFly(); return; }
+    var t = e.target.closest(".sb [data-tip]");
+    if (!t) { hideTip(); if (flyEl) { dropFly(); } return; }
+    var m = t.dataset.modbtn ? MODULES.filter(function (x) { return x.id === t.dataset.modbtn; })[0] : null;
+    if (m && m.items.length) { showFly(t, m); } else { hideFly(); showTip(t); }
+  });
+  document.addEventListener("click", function (e) { hideTip(); if (!e.target.closest(".fly")) { hideFly(); } }, true);
 
   /* ---- fade at the ends of the scrolling icons, only where more is hidden ---- */
   function fade() {
