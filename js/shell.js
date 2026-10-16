@@ -64,8 +64,7 @@
     return meAvatar("round") + '<i class="status' + (on ? " live" : "") + '"></i><span class="who"><b>' + DEMO.me.name + '</b><small>' + (on ? "Clocked in " + '<span data-clock>' + clockText() + '</span>' : DEMO.me.role) + '</small></span>';
   }
   function sidebarHtml() {
-    return '<div class="sb-top"><a class="sb-emblem" href="index.html" aria-label="Ariel HR"><span class="emblem" style="--e:2.125rem"></span></a></div>' +
-      '<nav class="sb-menu" id="sbMenu" aria-label="Modules">' + menuHtml() + '</nav>' +
+    return '<nav class="sb-menu" id="sbMenu" aria-label="Modules">' + menuHtml() + '</nav>' +
       '<div class="sb-bottom"><button class="sb-bell" data-pop="notes" data-tip="Notifications" aria-label="Notifications">' + iconLine("bell", "lg") + (unread ? '<span class="badge">' + unread + '</span>' : "") + '</button><button class="sb-user" id="sbUser" data-pop="user" data-tip="' + DEMO.me.name + '" aria-label="Your menu">' + userBtnHtml() + '</button></div>';
   }
 
@@ -94,7 +93,7 @@
     }).join("");
   }
   function panelHtml(m) {
-    return '<div class="sb-panel" id="sbPanel"><button class="pn-co" type="button" data-pop="company" aria-label="Company"><span class="pn-mark">' + DEMO.company.name.charAt(0) + '</span><span class="pn-name">' + DEMO.company.short + '</span>' + icon("updown", "sm") + '</button>' +
+    return '<div class="sb-panel" id="sbPanel"><a class="pn-logo" href="index.html" aria-label="Ariel Software Solutions"><img class="logo-img" src="assets/ariel-logo.webp" alt="Ariel Software Solutions"></a>' +
       '<button class="pn-search" type="button" data-do="search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
       '<nav class="pn-menu" id="pnMenu" aria-label="' + m.label + ' pages">' + panelBody(m) + '</nav></div>';
   }
