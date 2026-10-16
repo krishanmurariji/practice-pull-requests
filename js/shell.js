@@ -93,7 +93,7 @@
     }).join("");
   }
   function panelHtml(m) {
-    return '<div class="sb-panel" id="sbPanel"><a class="pn-logo" href="index.html" aria-label="Ariel Software Solutions"><img class="logo-img" src="assets/ariel-logo-sm.png" alt="Ariel Software Solutions"></a>' +
+    return '<div class="sb-panel" id="sbPanel"><a class="pn-logo" href="recruitment-dashboard.html" aria-label="Ariel Software Solutions"><img class="logo-img" src="assets/ariel-logo-sm.png" alt="Ariel Software Solutions"></a>' +
       '<button class="pn-search" type="button" data-do="search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
       '<nav class="pn-menu" id="pnMenu" aria-label="' + m.label + ' pages">' + panelBody(m) + '</nav></div>';
   }
@@ -274,7 +274,7 @@
     if (what === "photo") { document.getElementById("photoFile").click(); }
     if (what === "myprofile") { closePop(); toast("Opens your employee profile (demo)"); }
     if (what === "cache") { closePop(); toast("Cache cleared"); }
-    if (what === "signout") { closePop(); toast("Signed out (demo)"); }
+    if (what === "signout") { closePop(); location.href = "login.html"; }
     if (what === "readall") { document.querySelectorAll(".pop .note").forEach(function (n) { n.classList.remove("unread"); }); unread = 0; var bd = document.querySelector(".sb-bell .badge"); if (bd) { bd.remove(); } }
     if (what === "password") {
       closePop();

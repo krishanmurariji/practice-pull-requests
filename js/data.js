@@ -9,7 +9,7 @@
    `href` is the page that exists in this prototype; items without an href
    show as "not designed yet" and do nothing.                               */
 var MODULES = [
-  { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "index.html", items: [] },
+  { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "recruitment-dashboard.html", items: [] },
   { id: "employee", label: "Employee", icon: "users", items: [
     { label: "My Dashboard" }, { label: "Employees" }, { label: "Organization Chart" },
     { label: "Work Structure" }, { label: "Work Requests" }, { label: "Work Schedules" }, { label: "Policies & Discipline" } ] },

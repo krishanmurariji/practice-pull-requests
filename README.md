@@ -7,7 +7,7 @@ A separate design project for a new look of the Ariel HR app. It covers:
 - **all Recruitment pages** and the **candidate profile**
 
 It is plain HTML, CSS and JavaScript with demo data. There is no build step and no server.
-Open `index.html` in a browser (double-click works) and use the menu.
+Open `index.html` in a browser (double-click works). It opens the sign-in page; any username and password works and leads to the Recruitment dashboard.
 
 ## Where to edit
 
@@ -25,7 +25,9 @@ Open `index.html` in a browser (double-click works) and use the menu.
 
 | Page | File |
 |---|---|
-| Redesign preview (start here) | `index.html` |
+| Start page (opens the sign-in page) | `index.html` |
+| Sign in, Forgot password | `login.html`, `forgot-password.html` |
+| Old redesign preview page | `overview.html` |
 | Recruitment, Dashboard | `recruitment-dashboard.html` |
 | Job Openings | `job-openings.html` |
 | Open Jobs | `open-jobs.html` |
