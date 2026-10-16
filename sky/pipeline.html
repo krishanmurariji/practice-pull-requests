@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Pipeline</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .psum { display: inline-flex; align-items: center; gap: 0.6rem; font-size: var(--fs-xs); color: var(--ink-2); flex-wrap: wrap; }
+  .psum .live { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--sky) 25%, transparent); }
+  .psum .live.off { background: var(--ink-3); box-shadow: none; }
+  .psum .mg { display: inline-flex; align-items: center; gap: 0.35rem; opacity: 0; transition: opacity 0.2s; }
+  .psum:hover .mg { opacity: 1; }
+  .kcard .tags { margin-top: 0.1rem; }
+  .kcard .tag { font-size: 0.6rem; }
+  .kcard .foot a { color: var(--brand); }
+  .kcard .foot .stars svg { width: 0.7rem; height: 0.7rem; }
+  .hint-empty { text-align: center; padding: 1rem 0; font-size: var(--fs-xs); color: var(--ink-3); }
+  .col-head .lbl-t { flex: 1 1 auto; }
+  .col-head .hide { opacity: 0; transition: opacity 0.15s; font-size: var(--fs-xs); color: var(--ink-3); font-weight: 400; }
+  .col-head:hover .hide { opacity: 1; }
+  .col.min .col-head .hide { display: none; }
+</style>
+</head>
+<body data-module="recruitment" data-page="pipeline" data-title="Recruitment Pipeline">
+<main id="page">
+  <div data-actions>
+    <label class="xsearch" id="xs"><span data-i="search"></span><input id="q" type="search" placeholder="Search this board" aria-label="Search board"></label>
+    <button class="xbtn" id="filterBtn" aria-label="Filters"><span data-i="filter"></span><span class="xl">Filters</span></button>
+    <button class="xbtn primary" id="add" aria-label="Add candidate"><span data-i="plus"></span><span class="xl">Add candidate</span></button>
+  </div>
+
+  <div class="sub-bar"><button class="selbtn" id="jobBtn" aria-haspopup="menu"><span class="t" id="jobName"></span><span class="n" id="jobN"></span><span data-i="down"></span></button><span class="psum" id="summary"></span></div>
+  <div class="board" id="board"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var jobId = +(qparam("job") || 1), q = "", folded = {};
+  function count(j) { return DEMO.candidates.filter(function (c) { return c.job === j.id; }).length; }
+
+  function drawPicker() { var j = DEMO.job(jobId); document.getElementById("jobName").textContent = j.title; document.getElementById("jobN").textContent = count(j); }
+  function drawSummary() {
+    var j = DEMO.job(jobId);
+    document.getElementById("summary").innerHTML = '<i class="live ' + (j.status === "open" ? "" : "off") + '"></i><span>' + (j.status === "open" ? "Open" : "Closed") + '</span><span class="faint">·</span><span>' + j.filled + ' of ' + j.openings + ' filled</span><span class="mg">' + avatarStack(j.managers) + '<span class="faint">' + j.managers.join(", ") + '</span></span>';
+  }
+  function card(c) {
+    return '<div class="kcard hov" draggable="true" data-id="' + c.id + '"><div class="top">' + avatar(c.name) + '<div class="who grow"><div><b>' + c.name + '</b><small>' + c.exp + ' yrs · ' + c.loc + '</small></div></div>' + ring(c.ai) + '</div>' +
+      '<div class="peek flow"><div class="in"><div class="tags">' + c.skills.slice(0, 3).map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div>' +
+      '<div class="foot"><span>' + ago(c.applied) + '</span><span class="right">' + (c.rating ? stars(c.rating) : "") + '<a href="candidate-profile.html?id=' + c.id + '" aria-label="Open profile">' + icon("arrowup", "sm") + '</a></span></div></div></div></div>';
+  }
+  function drawBoard() {
+    var list = DEMO.candidates.filter(function (c) { return c.job === jobId && (!q || (c.name + c.skills.join(" ")).toLowerCase().indexOf(q) >= 0); });
+    document.getElementById("board").innerHTML = DEMO.stages.map(function (s) {
+      var items = list.filter(function (c) { return c.stage === s.id; });
+      return '<section class="col' + (folded[s.id] ? " min" : "") + '" data-stage="' + s.id + '"><div class="col-head" data-fold="' + s.id + '" title="Click to ' + (folded[s.id] ? "expand" : "collapse") + '"><span class="dot" style="background:' + s.color + '"></span><span class="lbl-t">' + s.label + '</span><span class="hide">hide</span><span class="n">' + items.length + '</span></div>' +
+        items.map(card).join("") + (items.length ? "" : '<div class="hint-empty">Drop candidates here</div>') + '</section>';
+    }).join("");
+  }
+  function redraw() { drawPicker(); drawSummary(); drawBoard(); }
+
+  document.getElementById("jobBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    skyMenu(this, '<h4>Recruitment</h4>' + DEMO.jobs.map(function (j) { return '<button class="item' + (j.id === jobId ? " on" : "") + '" data-pick="' + j.id + '">' + j.title + '<span class="tail">' + count(j) + '</span></button>'; }).join(""), function (v) {
+      jobId = +v; try { history.replaceState(null, "", "?job=" + jobId); } catch (err) {} redraw();
+    }, 240);
+  });
+  var xs = document.getElementById("xs"), qi = document.getElementById("q");
+  xs.addEventListener("click", function () { qi.focus(); });
+  qi.addEventListener("input", function () { q = qi.value.toLowerCase(); xs.classList.toggle("has", !!qi.value); drawBoard(); });
+
+  var dragId = null, board = document.getElementById("board");
+  board.addEventListener("click", function (e) { var h = e.target.closest("[data-fold]"); if (h) { folded[h.dataset.fold] = !folded[h.dataset.fold]; drawBoard(); } });
+  board.addEventListener("dragstart", function (e) { var k = e.target.closest(".kcard"); if (!k) { return; } dragId = +k.dataset.id; k.classList.add("drag"); e.dataTransfer.setData("text/plain", dragId); });
+  board.addEventListener("dragend", function () { dragId = null; drawBoard(); });
+  board.addEventListener("dragover", function (e) { var c = e.target.closest(".col"); if (c) { e.preventDefault(); [].forEach.call(board.children, function (x) { x.classList.toggle("over", x === c); }); } });
+  board.addEventListener("drop", function (e) {
+    var c = e.target.closest(".col"); if (!c || !dragId) { return; }
+    e.preventDefault();
+    var cand = DEMO.cand(dragId), to = c.dataset.stage;
+    if (cand.stage !== to) { cand.stage = to; toast(cand.name + " moved to " + DEMO.stage(to).label); }
+    dragId = null; redraw();
+  });
+  document.getElementById("filterBtn").addEventListener("click", function () { toast("Filters: skill, rating, AI score (demo only)"); });
+  document.getElementById("add").addEventListener("click", function () { toast("Add candidate opens the same form as the Candidates page"); });
+  redraw();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

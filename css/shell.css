@@ -1,0 +1,152 @@
+/* =====================================================================
+   APP SHELL: a slim icon strip that opens to the right on hover, plus the page frame.
+   Strip: theme icon (top), scrolling module icons (middle), your avatar (bottom).
+   On hover it widens over the page and shows names and the Ariel logo.
+   ===================================================================== */
+.app { display: grid; grid-template-columns: var(--sb-w-collapsed) minmax(0, 1fr); min-height: 100vh; }
+
+/* the slot keeps the page from moving; the sidebar itself grows over the page */
+.sb-slot { position: sticky; top: 0; height: 100vh; z-index: 40; }
+.sb { position: absolute; left: 0; top: 0; bottom: 0; width: var(--sb-w-collapsed); overflow: hidden; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 1.125rem 0.75rem 1.375rem; transition: width 0.2s ease, box-shadow 0.2s ease; }
+.sb.expanded { width: 15.75rem; box-shadow: var(--shadow-lg); }
+
+/* top: theme icon, and the logo once the strip is open */
+.sb-top { display: flex; align-items: center; gap: 0.75rem; height: 2.75rem; flex: none; margin-bottom: 1.625rem; }
+.sb-bell { width: 2.75rem; height: 2.75rem; flex: none; border: 0; border-radius: 0.75rem; background: none; color: var(--ink-2); display: grid; place-items: center; }
+.sb-bell:hover { background: var(--surface-2); color: var(--ink); }
+.sb-logo-img { height: 1.875rem; width: auto; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.sb.expanded .sb-logo-img { opacity: 1; transition-delay: 0.08s; }
+
+/* middle: the scrolling icons, with a fade where more is hidden */
+.sb-menu { --fade-top: 0px; --fade-bottom: 0px; flex: 1 1 auto; min-height: 0; margin: 0 -0.75rem; padding: 0 0.75rem; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 0.375rem;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent 100%); }
+.sb-menu::-webkit-scrollbar { display: none; }
+.sb-menu > * { flex: none; }
+.mod-btn { display: flex; align-items: center; gap: 0.875rem; width: 100%; height: 2.75rem; padding: 0 0.6875rem; border: 0; border-radius: 0.75rem; background: none; color: var(--ink-2); font-size: var(--fs-md); font-weight: 500; text-align: left; text-decoration: none; position: relative; white-space: nowrap; }
+.mod-btn:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.mod-btn.on { color: var(--ink); background: var(--surface-2); }
+.mod-btn.on::before { content: ""; position: absolute; left: -0.75rem; top: 0.625rem; bottom: 0.625rem; width: 2px; border-radius: 0 2px 2px 0; background: var(--ink); }
+.mod-btn svg.i { width: 1.375rem; height: 1.375rem; }
+.mod-btn .lbl { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.12s; }
+.sb.expanded .mod-btn .lbl { opacity: 1; transition-delay: 0.08s; }
+.mod-btn .chev { width: 0.75rem; height: 0.75rem; color: var(--ink-3); opacity: 0; transition: transform 0.15s, opacity 0.12s; }
+.sb.expanded .mod-btn .chev { opacity: 1; }
+.mod.open > .mod-btn .chev { transform: rotate(90deg); }
+.subs { display: none; margin: 2px 0 0.5rem 1.375rem; padding-left: 0.75rem; border-left: 1px solid var(--line); }
+.sb.expanded .mod.open > .subs { display: block; }
+.sub { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: var(--ink-2); font-size: var(--fs-sm); text-decoration: none; white-space: nowrap; }
+.sub:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.sub.on { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.sub .count { margin-left: auto; font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* bottom: breathing room, then the avatar */
+.sb-bottom { flex: none; margin-top: 1.875rem; }
+.sb-user { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 2px; border: 0; border-radius: 6.1875rem; background: none; text-align: left; color: var(--ink); position: relative; }
+.sb-user:hover { background: var(--surface-2); }
+.sb-user .av { --s: 2.5rem; flex: none; }
+.sb-user .status { position: absolute; left: 1.875rem; bottom: 2px; width: 0.6875rem; height: 0.6875rem; border-radius: 50%; background: var(--ink-3); border: 2px solid var(--surface); }
+.sb-user .status.live { background: var(--good); }
+.sb-user .who { min-width: 0; opacity: 0; transition: opacity 0.12s; padding-right: 0.625rem; }
+.sb.expanded .sb-user .who { opacity: 1; transition-delay: 0.08s; }
+.sb-user .who b { display: block; font-size: var(--fs-md); font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-user .who small { display: block; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.25; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.av-img { object-fit: cover; }
+.av.round { border-radius: 50%; }
+.av.xl { --s: 5.5rem; font-size: 1.8rem; }
+.kbd { font-family: var(--font-mono); font-size: 0.66rem; border: 1px solid var(--line); background: var(--surface-2); padding: 1px 0.375rem; border-radius: 0.3125rem; color: var(--ink-2); white-space: nowrap; margin-left: auto; }
+
+/* ---- popovers (user menu, notifications, company, appearance) ---- */
+.pop { position: fixed; z-index: 90; min-width: 16.25rem; max-width: 21.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.75rem; box-shadow: var(--shadow-lg); padding: 0.5rem; max-height: calc(100vh - 1.5rem); overflow-y: auto; }
+.pop h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); padding: 0.5rem 0.625rem 0.25rem; font-weight: 600; }
+.pop .item { display: flex; align-items: center; gap: 0.625rem; width: 100%; padding: 0.5rem 0.625rem; border-radius: 0.5rem; border: 0; background: none; color: var(--ink); font-size: var(--fs-sm); text-align: left; text-decoration: none; }
+.pop .item:hover { background: var(--surface-2); text-decoration: none; }
+.pop .item.on { background: var(--surface-2); font-weight: 650; }
+.pop .item.danger { color: var(--bad); }
+.pop .item .tail { margin-left: auto; color: var(--ink-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.pop .item .tail.live { color: var(--good); }
+.pop .sep { height: 1px; background: var(--line); margin: 0.375rem 0.25rem; }
+.pop .note { display: flex; gap: 0.625rem; padding: 0.5625rem 0.625rem; border-radius: 0.5rem; font-size: var(--fs-sm); }
+.pop .note:hover { background: var(--surface-2); }
+.pop .note p { color: var(--ink-2); font-size: var(--fs-xs); }
+.pop .note.unread::after { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--brand); margin-left: auto; margin-top: 0.375rem; flex: none; }
+.pop .head { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.625rem 0.625rem; }
+.pop .head b { font-size: var(--fs-md); display: block; }
+
+/* appearance */
+.set { padding: 0.5rem 0.625rem; }
+.set > label { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; margin-bottom: 0.5rem; }
+.seg.full { display: flex; width: 100%; }
+.seg.full button { flex: 1 1 0; justify-content: center; padding: 0 0.375rem; gap: 0.3125rem; font-size: var(--fs-xs); }
+.swatches { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.swatch { width: 1.75rem; height: 1.75rem; border-radius: 50%; border: 0; background: var(--sw); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--surface), 0 0 0 0.1875rem var(--line); }
+.swatch svg { opacity: 0; width: 0.875rem; height: 0.875rem; }
+.swatch.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 0.25rem var(--sw); }
+.swatch.on svg { opacity: 1; }
+.pop .select { height: 2.25rem; }
+
+/* ---- command palette ---- */
+.palette-back { position: fixed; inset: 0; background: rgba(6, 10, 19, 0.55); z-index: 100; display: grid; place-items: start center; padding-top: 12vh; }
+.palette { width: min(37.5rem, 92vw); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+.palette input { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 1rem 1.125rem; font-size: var(--fs-lg); outline: none; }
+.palette ul { max-height: 52vh; overflow-y: auto; padding: 0.5rem; }
+.palette li a { display: flex; align-items: center; gap: 0.75rem; padding: 0.5625rem 0.75rem; border-radius: 0.5rem; color: var(--ink); text-decoration: none; }
+.palette li a:hover, .palette li a.sel { background: var(--surface-2); text-decoration: none; }
+.palette li small { margin-left: auto; color: var(--ink-3); font-size: var(--fs-xs); }
+
+/* ---- page frame ---- */
+.main { min-width: 0; }
+.content { padding: 1.625rem 2rem 3.5rem; width: 100%; max-width: 150rem; margin: 0 auto; }
+.page-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-bottom: 1.25rem; }
+.page-head h1 { font-size: var(--fs-xl); line-height: 1.2; }
+.page-head p { color: var(--ink-2); margin-top: 0.25rem; max-width: 64ch; }
+.page-head .actions { margin-left: auto; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.page-head.compact { margin-bottom: 0.875rem; }
+.page-head.compact h1, .page-head.compact p { display: none; }
+.m-top { display: none; }
+.emblem { --e: 1.75rem; width: var(--e); height: var(--e); display: block; background: url("../assets/ariel-logo.webp") no-repeat; background-size: calc(var(--e) * 3.774) auto; background-position: calc(var(--e) * -0.0283) calc(var(--e) * -0.349); }
+
+/* the logo is black, so flip it in dark mode */
+:root[data-theme="dark"] .emblem, :root[data-theme="dark"] .sb-logo-img, :root[data-theme="dark"] .logo-img { filter: invert(1) hue-rotate(180deg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .emblem, :root:not([data-theme="light"]) .sb-logo-img, :root:not([data-theme="light"]) .logo-img { filter: invert(1) hue-rotate(180deg); } }
+
+/* ---- small screens: no strip, a top bar opens the full sidebar over the page ---- */
+@media (max-width: 720px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sb-slot { position: static; height: 0; }
+  .sb { position: fixed; width: 16.5rem; transform: translateX(-102%); transition: transform 0.2s; box-shadow: var(--shadow-lg); }
+  .app.open .sb { transform: none; }
+  .m-top { display: flex; align-items: center; gap: 0.625rem; position: sticky; top: 0; z-index: 30; height: 3.375rem; padding: 0 0.875rem; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(0.5rem); border-bottom: 1px solid var(--line); }
+  .m-top button { width: 2.5rem; height: 2.5rem; border: 1px solid var(--line); border-radius: 0.625rem; background: var(--surface); color: var(--ink); display: grid; place-items: center; }
+  .m-top b { font-weight: 650; }
+  .content { padding: 1.125rem 1rem 3rem; }
+  .page-head h1 { font-size: var(--fs-xl); }
+}
+
+/* the user row stacks name over role (the shared .who helper is a row) */
+.sb-user .who { display: block; flex: 1 1 auto; }
+
+/* ---- alignment fixes ---- */
+/* the logo sits in the middle of the open sidebar; the theme icon stays in the icon column */
+.sb-top { position: relative; }
+.sb-logo-img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: 1.875rem; }
+/* the avatar is the same footprint as an icon button: 2.75rem row, centred on the same line as the icons */
+.sb-user { padding: 0.4375rem; gap: 0.625rem; height: 2.75rem; border-radius: 0.75rem; }
+.sb-user .av { --s: 1.875rem; }
+.sb-user .status { left: 1.8125rem; bottom: 0.3125rem; width: 0.625rem; height: 0.625rem; border-width: 2px; }
+
+/* the bell at the top carries a small unread badge */
+.sb-bell { position: relative; }
+.sb-bell .badge { position: absolute; top: 0.375rem; right: 0.375rem; min-width: 1.0625rem; height: 1.0625rem; padding: 0 0.25rem; border-radius: 6.1875rem; background: var(--bad); color: #fff; font-size: 0.62rem; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--surface); box-sizing: content-box; line-height: 1; }
+
+/* the unread badge is a small pill in the corner, clear of the bell */
+.sb-bell .badge { top: 1px; right: 1px; min-width: 1rem; height: 1rem; padding: 0 0.1875rem; box-sizing: border-box; border-width: 2px; font-size: 0.56rem; }
+
+.content { padding-top: 1.375rem; }
+
+/* a thin line under the heading row */
+.page-head.ruled { padding-bottom: 0.875rem; border-bottom: 1px solid var(--line); margin-bottom: 1.125rem; }
+
+/* optional one-line summary under the page title (set data-sub on <body>) */
+.page-head .head-sub { font-size: var(--fs-xs); color: var(--ink-3); margin-top: 0.125rem; max-width: none; }
+.page-head.compact .head-sub { display: none; }

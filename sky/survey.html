@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Survey</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .split { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 1rem; align-items: start; }
+  @media (max-width: 720px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  /* template list: a name only. The question count opens on hover. */
+  .tpl { display: block; width: 100%; text-align: left; padding: 0.55rem 0.8rem; border-radius: 0.85rem; border: 1px solid transparent; background: transparent; margin-bottom: 0.15rem; transition: background 0.15s, transform 0.18s, border-color 0.15s; }
+  .tpl b { font-weight: 550; font-size: var(--fs-sm); display: block; }
+  .tpl .peek .in { font-size: var(--fs-xs); color: var(--ink-3); }
+  .tpl:hover { background: var(--surface); transform: translateX(3px); border-color: var(--line); }
+  .tpl.on { background: var(--sky-soft); border-color: #b9e0f6; }
+  .tpl.on b { color: var(--brand-strong); }
+  .dhead { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.7rem; }
+  .dhead h2 { font-size: var(--fs-lg); font-weight: 600; }
+  .dhead small { color: var(--ink-3); font-size: var(--fs-xs); margin-left: 0.2rem; }
+  .dhead .acts { margin-left: auto; display: flex; gap: 0.3rem; }
+  .qrow .no { width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--sky-soft); color: var(--brand-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-xs); flex: none; }
+  .qrow .rx { gap: 0.4rem; }
+  .qrow .rx .type { color: var(--ink-3); margin-right: 0.2rem; }
+  .qrow .rx .tag { font-size: 0.6rem; }
+  .addq { width: 100%; height: 2.4rem; border: 1.5px dashed #b9e0f6; border-radius: 0.95rem; background: transparent; color: var(--brand); font-size: var(--fs-sm); font-weight: 550; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background 0.18s; }
+  .addq:hover { background: var(--sky-soft); }
+</style>
+</head>
+<body data-module="recruitment" data-page="survey" data-title="Recruitment Survey">
+<main id="page">
+  <div data-actions><button class="xbtn primary" id="new" aria-label="New template"><span data-i="plus"></span><span class="xl">New template</span></button></div>
+  <div class="split">
+    <div id="list"></div>
+    <div id="detail" class="panel"></div>
+  </div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var sel = 1;
+  function list() {
+    document.getElementById("list").innerHTML = DEMO.surveys.map(function (s) {
+      return '<button class="tpl hov' + (s.id === sel ? " on" : "") + '" data-id="' + s.id + '"><b>' + s.name + '</b><div class="peek flow"><div class="in">' + s.questions.length + ' questions · used by ' + s.used + ' openings</div></div></button>';
+    }).join("");
+  }
+  function detail() {
+    var s = DEMO.surveys.filter(function (x) { return x.id === sel; })[0], d = document.getElementById("detail");
+    d.innerHTML = '<div class="dhead"><h2>' + s.name + '</h2><small>' + s.questions.length + ' questions · used by ' + s.used + '</small><div class="acts"><button class="xbtn" aria-label="Duplicate">' + icon("copy", "sm") + '<span class="xl">Duplicate</span></button><button class="xbtn" aria-label="Rename">' + icon("edit", "sm") + '<span class="xl">Rename</span></button><button class="xbtn" aria-label="Delete" style="color:var(--bad)">' + icon("trash", "sm") + '<span class="xl">Delete</span></button></div></div>' +
+      s.questions.map(function (q, i) {
+        return '<div class="lrow qrow hov"><span class="no">' + (i + 1) + '</span><div class="main"><b>' + q.q + '</b></div><div class="rx"><span class="type">' + q.type + '</span>' + (q.options ? q.options.slice(0, 4).map(function (o) { return '<span class="tag opt">' + o + '</span>'; }).join("") : "") + '<button class="btn sm icon ghost" aria-label="Edit">' + icon("edit", "sm") + '</button><button class="btn sm icon ghost" aria-label="Remove">' + icon("trash", "sm") + '</button></div></div>';
+      }).join("") + '<button class="addq" id="addq">' + icon("plus") + 'Add question</button>';
+    d.classList.remove("panel"); void d.offsetWidth; d.classList.add("panel");
+    fitX(d);
+    document.getElementById("addq").addEventListener("click", function () {
+      openDrawer({ title: "Add question", body: '<div class="form-grid"><div class="full"><label class="lbl">Question <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Answer type</label><select class="select"><option>Short text</option><option>Long text</option><option>Single choice</option><option>Multiple choice</option><option>Yes / No</option><option>Number</option><option>Rating (1 to 5)</option></select></div><label class="row" style="align-self:end"><span class="switch"><input type="checkbox"><span></span></span>Required</label><div class="full"><label class="lbl">Choices</label><input class="input" placeholder="Separate choices with commas"><div class="hint">Only used for single and multiple choice.</div></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Add question</button>' });
+    });
+  }
+  document.getElementById("list").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) { sel = +b.dataset.id; list(); detail(); } });
+  document.getElementById("new").addEventListener("click", function () { openModal({ title: "New survey template", body: '<label class="lbl">Template name</label><input class="input" placeholder="For example, Phone screen">', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Create</button>' }); });
+  list(); detail();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

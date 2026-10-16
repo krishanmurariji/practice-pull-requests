@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Openings</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  /* quiet cards: title, a status dot and a vacancy bar. Location, closing date and faces open on hover. */
+  .jobs .grid.g3 { grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 0.7rem; align-items: start; }
+  .jobs .job-card { padding: 0.8rem 0.95rem; gap: 0.6rem; cursor: pointer; position: relative; animation: skyIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+  .jobs .job-card:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+  .job-card .top { display: flex; align-items: center; gap: 0.5rem; }
+  .job-card h3 { font-size: var(--fs-md); font-weight: 600; line-height: 1.3; min-width: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-card .badge-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex: none; background: var(--sky); box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--sky) 25%, transparent); position: relative; }
+  .job-card .badge-dot.off { background: var(--ink-3); box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--ink-3) 20%, transparent); }
+  .job-card .badge-dot.live::after { content: ""; position: absolute; inset: -0.3rem; border-radius: 50%; border: 2px solid var(--sky); opacity: 0; animation: ping 2.2s ease-out infinite; }
+  @keyframes ping { 0% { transform: scale(0.5); opacity: 0.6; } 80%, 100% { transform: scale(1.25); opacity: 0; } }
+  .job-card .more { margin: 0 -0.4rem 0 -2px; width: 1.6rem; height: 1.6rem; opacity: 0; transition: opacity 0.15s; }
+  .job-card:hover .more, .job-card:focus-within .more, .job-card .more.open { opacity: 1; }
+  .vac-line { display: flex; align-items: center; gap: 0.55rem; }
+  .segs { display: flex; gap: 0.2rem; flex: 1 1 auto; }
+  .segs i { flex: 1 1 0; height: 0.3rem; border-radius: 99px; background: var(--surface-2); max-width: 2.4rem; }
+  .segs i.on { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+  .segs.done i.on { background: var(--good); }
+  .vac-line .fr { font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .vac-line .fr b { color: var(--ink); font-weight: 600; }
+  .job-card .peek .in { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: var(--fs-xs); color: var(--ink-2); }
+  .job-card .peek .l { display: flex; flex-direction: column; gap: 0.2rem; }
+  .job-card .peek .l span { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .job-card .peek .l .soon { color: var(--warn); font-weight: 600; }
+  .job-card .peek svg.i { width: 0.75rem; height: 0.75rem; color: var(--ink-3); }
+  .job-card .faces { display: flex; align-items: center; gap: 0.3rem; font-size: 0.62rem; color: var(--ink-3); flex: none; }
+  .job-ghost { min-height: 3.2rem; border: 1.5px dashed #b9e0f6; border-radius: 1rem; background: transparent; color: var(--brand); display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: var(--fs-sm); font-weight: 550; transition: background 0.18s, transform 0.18s; animation: skyIn 0.4s both; animation-delay: calc(var(--i, 0) * 40ms); }
+  .job-ghost:hover { background: var(--sky-soft); transform: scale(1.02); }
+  /* table view: five columns; the rest is in the details drawer */
+  .jobs .tbl { font-size: var(--fs-sm); min-width: 36rem; }
+  .jobs .tbl tbody tr { cursor: pointer; }
+  .jobs .tbl .faint { font-size: var(--fs-xs); }
+  .jobs .tbl .act .more { opacity: 0; transition: opacity 0.15s; }
+  .jobs .tbl tr:hover .act .more { opacity: 1; }
+  .jobs .table-foot { font-size: var(--fs-xs); }
+  /* details drawer */
+  .detail-top { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1rem; }
+  .detail-top .dept { color: var(--ink-2); }
+  .detail .dl { grid-template-columns: 6.5rem minmax(0, 1fr); font-size: var(--fs-sm); }
+  .detail h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 1.2rem 0 0.5rem; font-weight: 600; }
+  .detail p { color: var(--ink-2); line-height: 1.65; font-size: var(--fs-sm); }
+</style>
+</head>
+<body data-module="recruitment" data-page="job-openings" data-title="Job Openings">
+<main id="page">
+  <!-- heading row, right side: search, filter, view, export, new. Each is an icon that widens on hover. -->
+  <div data-actions>
+    <label class="xsearch" id="xs"><span data-i="search"></span><input id="q" type="search" placeholder="Search openings" aria-label="Search openings"></label>
+    <button class="xbtn" id="filterBtn" aria-label="Filter openings"><span data-i="filter"></span><span class="xl" id="filterLbl">All jobs</span></button>
+    <button class="xbtn" id="viewBtn" aria-label="Switch view"><span id="viewIco"></span><span class="xl" id="viewLbl">Table view</span></button>
+    <button class="xbtn" id="exportBtn" aria-label="Export"><span data-i="download"></span><span class="xl">Export</span></button>
+    <button class="xbtn" id="create" aria-label="New opening"><span data-i="plus"></span><span class="xl">New opening</span></button>
+  </div>
+
+  <div id="out" class="jobs"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  var state = { f: "all", q: "", v: "cards" };
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+
+  var FILTERS = [["all", "All jobs"], ["open", "Open"], ["closed", "Closed"]];
+  var DEPTS = ["Development", "Designing", "Human Resource", "Accounts", "Business Development"];
+  function counts() { return { all: DEMO.jobs.length, open: DEMO.jobs.filter(function (j) { return j.status === "open"; }).length, closed: DEMO.jobs.filter(function (j) { return j.status === "closed"; }).length }; }
+  function rows() {
+    return DEMO.jobs.filter(function (j) {
+      var hay = (j.title + " " + j.dept + " " + j.skills.join(" ")).toLowerCase();
+      return (state.f === "all" || j.status === state.f) && (!state.q || hay.indexOf(state.q) >= 0);
+    });
+  }
+  var DEPT_COLOR = { "Development": "#2563eb", "Designing": "#7c4dff", "Human Resource": "#0d9488", "Accounts": "#ea7a1a", "Business Development": "#d6457a" };
+  function deptColor(d) { return DEPT_COLOR[d] || "var(--brand)"; }
+  function daysLeft(j) { return Math.round((new Date(j.end) - new Date(DEMO.today)) / 86400000); }
+  function whenText(j) {
+    if (j.status === "closed") { return { t: "Closed " + shortDate(j.end), soon: false }; }
+    var n = daysLeft(j);
+    if (n < 0) { return { t: "Past its closing date", soon: true }; }
+    if (n === 0) { return { t: "Closes today", soon: true }; }
+    return { t: "Closes in " + n + " day" + (n === 1 ? "" : "s"), soon: n <= 14 };
+  }
+  function cardHtml(j, i) {
+    var w = whenText(j), segN = Math.min(j.openings, 10), segOn = Math.round(j.filled / j.openings * segN), done = j.filled >= j.openings;
+    var segs = ""; for (var s = 0; s < segN; s++) { segs += '<i class="' + (s < segOn ? "on" : "") + '"></i>'; }
+    var names = DEMO.candidates.filter(function (c) { return c.job === j.id; }).map(function (c) { return c.name; });
+    var faces = names.length ? '<span class="faces">' + avatarStack(names.slice(0, 3), "xs") + (names.length > 3 ? '<span>+' + (names.length - 3) + '</span>' : "") + '</span>' : '<span class="faces">No candidates yet</span>';
+    return '<article class="card job-card hov lift" data-id="' + j.id + '" tabindex="0" style="--i:' + i + '" aria-label="' + j.title + ', view details">' +
+      '<div class="top"><h3 title="' + j.title + '">' + j.title + '</h3>' +
+        '<span class="badge-dot ' + (j.status === "open" ? "live" : "off") + '" role="img" aria-label="' + (j.status === "open" ? "Open" : "Closed") + '" title="' + (j.status === "open" ? "Open" : "Closed") + '"></span>' + moreBtn(j) + '</div>' +
+      '<div class="vac-line"><div class="segs ' + (done ? "done" : "") + '" aria-label="' + j.filled + ' of ' + j.openings + ' filled">' + segs + '</div><span class="fr"><b>' + j.filled + '</b>/' + j.openings + '</span></div>' +
+      '<div class="peek"><div class="in"><div class="l"><span>' + icon("pin") + j.loc + '</span><span class="' + (w.soon ? "soon" : "") + '">' + icon("clock") + w.t + '</span></div>' + faces + '</div></div></article>';
+  }
+  function applicants(j) { return DEMO.candidates.filter(function (c) { return c.job === j.id; }).length; }
+  function statusChip(j) { return j.status === "open" ? chip("Open", "info", true) : chip("Closed", "", true); }
+  function jobById(id) { return DEMO.jobs.filter(function (j) { return j.id === +id; })[0]; }
+  function moreBtn(j) { return '<button class="icon-btn more" data-menu="' + j.id + '" aria-label="Options for ' + j.title + '" aria-haspopup="menu">' + icon("dotsv") + '</button>'; }
+
+  /* the buttons reflect the current state: the view button always offers the OTHER view */
+  function syncButtons() {
+    var c = counts(), name = FILTERS.filter(function (f) { return f[0] === state.f; })[0][1];
+    document.getElementById("filterLbl").innerHTML = name + ' <span class="n">' + c[state.f] + '</span>';
+    document.getElementById("viewIco").innerHTML = icon(state.v === "cards" ? "list" : "grid");
+    document.getElementById("viewLbl").textContent = state.v === "cards" ? "Table view" : "Card view";
+    document.getElementById("viewBtn").setAttribute("aria-label", "Switch to " + document.getElementById("viewLbl").textContent.toLowerCase());
+    fitX(document.getElementById("head-actions"));
+  }
+
+  function draw() {
+    var list = rows(), out = document.getElementById("out");
+    if (!list.length) { out.innerHTML = '<div class="card empty">No openings match. Try clearing the search.</div>'; return; }
+    if (state.v === "cards") {
+      out.innerHTML = '<div class="grid g3">' + list.map(function (j, i) { return cardHtml(j, i); }).join("") +
+        '<button class="job-ghost" data-new="1" style="--i:' + list.length + '" aria-label="New opening">' + icon("plus") + 'New opening</button></div>';
+    } else {
+      out.innerHTML = '<div class="card flush"><div class="table-wrap"><table class="tbl"><thead><tr><th>Opening</th><th>Vacancies</th><th>Candidates</th><th>Closes</th><th>Status</th><th></th></tr></thead><tbody>' +
+        list.map(function (j) {
+          return '<tr data-id="' + j.id + '"><td><b>' + j.title + '</b><div class="faint">' + j.dept + ' · ' + j.loc + '</div></td><td>' + j.filled + ' / ' + j.openings + '</td><td>' + applicants(j) + '</td><td>' + shortDate(j.end) + '</td><td>' + statusChip(j) + '</td><td class="act">' + moreBtn(j) + '</td></tr>';
+        }).join("") + '</tbody></table></div><div class="table-foot">Showing ' + list.length + ' of ' + DEMO.jobs.length + '<div class="pager"><button class="on">1</button></div></div></div>';
+    }
+  }
+  function refresh() { syncButtons(); draw(); }
+
+  /* ---- small popover menu (filter and per-card options) ---- */
+  var menu = null, menuAnchor = null;
+  function closeMenu() { if (menu) { menu.remove(); menu = null; } if (menuAnchor) { menuAnchor.classList.remove("open"); menuAnchor = null; } }
+  function openMenu(anchor, html, onPick, width) {
+    closeMenu();
+    var r = anchor.getBoundingClientRect();
+    menu = document.createElement("div"); menu.className = "pop"; menu.setAttribute("role", "menu"); menu.innerHTML = html;
+    document.body.appendChild(menu);
+    if (width) { menu.style.minWidth = (width / 16) + "rem"; }
+    var mw = menu.offsetWidth;
+    menu.style.top = (r.bottom + 6) + "px"; menu.style.left = Math.max(12, Math.min(window.innerWidth - mw - 12, r.right - mw)) + "px";
+    anchor.classList.add("open"); menuAnchor = anchor;
+    menu.addEventListener("click", function (e) { var it = e.target.closest("[data-pick]"); if (it) { var v = it.dataset.pick; closeMenu(); onPick(v); } });
+  }
+  document.addEventListener("click", function (e) { if (menu && !e.target.closest(".pop") && e.target !== menuAnchor && !(menuAnchor && menuAnchor.contains(e.target))) { closeMenu(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeMenu(); } });
+
+  /* ---- the form, shared by New and Edit ---- */
+  function opts(list, selected) { return list.map(function (x) { return "<option" + (selected && selected.indexOf(x) >= 0 ? " selected" : "") + ">" + x + "</option>"; }).join(""); }
+  function formHtml(j) {
+    j = j || {};
+    return '<div class="form-grid"><div class="full"><label class="lbl">Title <span class="req">*</span></label><input class="input" data-f="title" value="' + (j.title || "") + '" placeholder="For example, Senior Django Developer"></div>' +
+      '<div><label class="lbl">Department</label><select class="select" data-f="dept">' + opts(DEPTS, [j.dept || "Development"]) + '</select></div>' +
+      '<div><label class="lbl">Vacancies</label><input class="input" data-f="openings" type="number" min="1" value="' + (j.openings || 1) + '"></div>' +
+      '<div><label class="lbl">Start date</label><input class="input" data-f="start" type="date" value="' + (j.start || DEMO.today) + '"></div><div><label class="lbl">End date</label><input class="input" data-f="end" type="date" value="' + (j.end || "") + '"></div>' +
+      '<div class="full"><label class="lbl">Recruitment managers</label><select class="select" data-f="managers" multiple style="height:6rem">' + opts(DEMO.team, j.managers || []) + '</select><div class="hint">Managers are notified for every new application.</div></div>' +
+      '<div class="full"><label class="lbl">Description</label><textarea class="textarea" data-f="desc" placeholder="Role summary, responsibilities and must-have skills">' + (j.desc || "") + '</textarea></div>' +
+      '<label class="row full"><span class="switch"><input type="checkbox" checked><span></span></span>Publish on the Open Jobs page</label></div>';
+  }
+  function readForm(root) {
+    var g = function (n) { return root.querySelector('[data-f="' + n + '"]'); };
+    return { title: g("title").value.trim(), dept: g("dept").value, openings: Math.max(1, parseInt(g("openings").value, 10) || 1), start: g("start").value, end: g("end").value, managers: [].map.call(g("managers").selectedOptions, function (o) { return o.value; }), desc: g("desc").value.trim() };
+  }
+
+  function newDrawer() {
+    var d = openDrawer({ title: "New job opening", body: formHtml(), foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="save">Create opening</button>' });
+    d.querySelector("#save").addEventListener("click", function () {
+      var v = readForm(d); if (!v.title) { toast("Please enter a title"); return; }
+      var id = Math.max.apply(null, DEMO.jobs.map(function (j) { return j.id; })) + 1;
+      DEMO.jobs.unshift({ id: id, title: v.title, dept: v.dept, openings: v.openings, filled: 0, loc: "Gurugram", type: "Full time", exp: "Not set", managers: v.managers.length ? v.managers : ["Admin User"], start: v.start, end: v.end || v.start, status: "open", skills: [], salary: "Not set", desc: v.desc });
+      d.close(); refresh(); toast("Opening created (demo only)");
+    });
+  }
+  function editDrawer(j) {
+    var d = openDrawer({ title: "Edit job opening", body: formHtml(j), foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="save">Save changes</button>' });
+    d.querySelector("#save").addEventListener("click", function () {
+      var v = readForm(d); if (!v.title) { toast("Please enter a title"); return; }
+      j.title = v.title; j.dept = v.dept; j.openings = Math.max(v.openings, j.filled); j.start = v.start || j.start; j.end = v.end || j.end; j.desc = v.desc; if (v.managers.length) { j.managers = v.managers; }
+      d.close(); refresh(); toast("Changes saved (demo only)");
+    });
+  }
+
+  /* ---- View details: everything that used to crowd the card ---- */
+  function detailsDrawer(j) {
+    var pct = j.filled / j.openings * 100;
+    var body = '<div class="detail"><div class="detail-top">' + statusChip(j) + '<span class="dept">' + j.dept + '</span></div>' +
+      '<dl class="dl"><dt>Location</dt><dd>' + j.loc + '</dd><dt>Type</dt><dd>' + j.type + '</dd><dt>Experience</dt><dd>' + j.exp + '</dd><dt>Salary</dt><dd>' + j.salary + '</dd>' +
+      '<dt>Opens</dt><dd>' + fmtDate(j.start) + '</dd><dt>Closes</dt><dd>' + fmtDate(j.end) + '</dd>' +
+      '<dt>Vacancies</dt><dd>' + j.filled + ' of ' + j.openings + ' filled<div class="bar ' + (pct === 100 ? "good" : "") + '" style="margin-top:0.5rem"><i style="width:' + pct + '%"></i></div></dd>' +
+      '<dt>Candidates</dt><dd><a href="pipeline.html?job=' + j.id + '">' + applicants(j) + ' in the pipeline</a></dd>' +
+      '<dt>Managers</dt><dd>' + j.managers.map(function (m) { return '<div class="row" style="margin-bottom:0.375rem">' + avatar(m, "xs") + '<span>' + m + '</span></div>'; }).join("") + '</dd></dl>' +
+      (j.skills.length ? '<h4>Skills</h4><div class="tags">' + j.skills.map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div>' : "") +
+      (j.desc ? '<h4>About the role</h4><p>' + j.desc + '</p>' : "") + '</div>';
+    var d = openDrawer({ title: j.title, body: body, foot: '<button class="btn danger" id="dDel" style="margin-right:auto">' + icon("trash", "sm") + 'Delete</button><button class="btn" id="dEdit">' + icon("edit", "sm") + 'Edit</button><a class="btn primary" href="pipeline.html?job=' + j.id + '">Open pipeline</a>' });
+    d.querySelector("#dEdit").addEventListener("click", function () { d.close(); setTimeout(function () { editDrawer(j); }, 200); });
+    d.querySelector("#dDel").addEventListener("click", function () { confirmDelete(j, d); });
+  }
+
+  /* ---- Delete: always asks first ---- */
+  function confirmDelete(j, drawerToClose) {
+    var m = openModal({ title: "Delete this opening?", body: '<p><b>' + j.title + '</b> will be removed from the list. Its ' + applicants(j) + ' candidates are kept and stay in the Candidates page.</p>', foot: '<button class="btn" data-close>Cancel</button><button class="btn bad" data-close id="yes">Delete opening</button>' });
+    m.querySelector("#yes").addEventListener("click", function () {
+      DEMO.jobs = DEMO.jobs.filter(function (x) { return x.id !== j.id; });
+      if (drawerToClose) { drawerToClose.close(); }
+      refresh(); toast("Opening deleted (demo only)");
+    });
+  }
+
+  /* ---- clicks on cards and rows ---- */
+  var out = document.getElementById("out");
+  out.addEventListener("click", function (e) {
+    var mb = e.target.closest("[data-menu]");
+    if (mb) {
+      e.stopPropagation();
+      if (menuAnchor === mb) { closeMenu(); return; }
+      var j = jobById(mb.dataset.menu);
+      openMenu(mb, '<button class="item" data-pick="view">' + icon("eye", "sm") + 'View details</button><button class="item" data-pick="edit">' + icon("edit", "sm") + 'Edit</button><div class="sep"></div><button class="item danger" data-pick="delete">' + icon("trash", "sm") + 'Delete</button>', function (v) {
+        if (v === "view") { detailsDrawer(j); } if (v === "edit") { editDrawer(j); } if (v === "delete") { confirmDelete(j); }
+      });
+      return;
+    }
+    if (e.target.closest("[data-new]")) { newDrawer(); return; }
+    var host = e.target.closest("[data-id]"); if (host && !e.target.closest("a")) { detailsDrawer(jobById(host.dataset.id)); }
+  });
+  out.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.classList.contains("job-card")) { detailsDrawer(jobById(e.target.dataset.id)); } });
+
+  /* ---- heading tools ---- */
+  var xs = document.getElementById("xs"), q = document.getElementById("q");
+  xs.addEventListener("click", function () { q.focus(); });
+  q.addEventListener("input", function () { state.q = q.value.toLowerCase(); xs.classList.toggle("has", !!q.value); draw(); });
+  document.getElementById("viewBtn").addEventListener("click", function () { state.v = state.v === "cards" ? "table" : "cards"; refresh(); });
+  document.getElementById("filterBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (menuAnchor === this) { closeMenu(); return; }
+    var c = counts();
+    openMenu(this, '<h4>Show</h4>' + FILTERS.map(function (f) { return '<button class="item' + (state.f === f[0] ? " on" : "") + '" data-pick="' + f[0] + '">' + f[1] + '<span class="tail">' + c[f[0]] + '</span></button>'; }).join(""), function (v) { state.f = v; refresh(); }, 200);
+  });
+  document.getElementById("exportBtn").addEventListener("click", function () { toast("Exported " + rows().length + " openings (demo only)"); });
+  document.getElementById("create").addEventListener("click", newDrawer);
+
+  refresh();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

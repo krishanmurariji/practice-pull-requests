@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body data-module="recruitment" data-page="dashboard" data-title="Dashboard">
+<main id="page">
+  <div data-actions>
+    <div class="seg" id="period"><button class="on">This month</button><button>Last month</button><button>Quarter</button></div>
+    <button class="btn">Customize</button>
+  </div>
+
+  <div class="grid g4" id="kpis"></div>
+
+  <div class="grid g-main" style="margin-top:var(--gap)">
+    <div class="card">
+      <div class="card-head"><h3>Hiring pipeline<small>Candidates currently in each stage, all recruitments</small></h3><div class="right"><a class="btn sm ghost" href="pipeline.html">Open board</a></div></div>
+      <div id="funnel"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Interviews today and next<small>With the interviewers assigned</small></h3><div class="right"><a class="btn sm ghost" href="interviews.html">All</a></div></div>
+      <div id="today"></div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:var(--gap)">
+    <div class="card" style="grid-column: span 2">
+      <div class="card-head"><h3>Candidates applied by date<small>Last 14 days</small></h3></div>
+      <div id="trend"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Where candidates come from<small>By source</small></h3></div>
+      <div id="sources"></div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:var(--gap)">
+    <div class="card">
+      <div class="card-head"><h3>Filled vs open vacancies<small>Per recruitment</small></h3></div>
+      <div id="vacancies"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>AI effectiveness<small>Resume scoring and mailbox intake, this period</small></h3></div>
+      <div id="ai"></div>
+    </div>
+  </div>
+
+  <div class="card flush" style="margin-top:var(--gap)">
+    <div class="card-head" style="padding:1.125rem 1.25rem 0"><h3>Candidates awaiting a response<small>Waiting longest first</small></h3></div>
+    <div class="table-wrap"><table class="tbl" id="waiting"></table></div>
+  </div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  var C = DEMO.candidates, J = DEMO.jobs;
+  var live = C.filter(function (c) { return c.stage !== "hired" && c.stage !== "cancelled"; });
+  var hired = C.filter(function (c) { return c.stage === "hired"; });
+  var openJobs = J.filter(function (j) { return j.status === "open"; });
+
+  /* KPI tiles */
+  var kpis = [
+    ["briefcase", "Active recruitments", openJobs.length, "<b>+2</b> since last month"],
+    ["users", "Candidates in pipeline", live.length, "<b>+9</b> this week"],
+    ["check", "Hired this quarter", hired.length, "<b>3</b> still to join"],
+    ["clock", "Average days to hire", 21, "<b class='neg'>+2 days</b> vs last quarter"]
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(function (k) {
+    return '<div class="card kpi"><div class="lbl"><span class="ico">' + icon(k[0]) + '</span>' + k[1] + '</div><div class="num">' + k[2] + '</div><div class="delta">' + k[3] + '</div></div>';
+  }).join("");
+
+  /* funnel */
+  var counts = DEMO.stages.map(function (s) { return { s: s, n: C.filter(function (c) { return c.stage === s.id; }).length }; });
+  var max = Math.max.apply(null, counts.map(function (x) { return x.n; }));
+  document.getElementById("funnel").innerHTML = counts.map(function (x) {
+    return '<div class="funnel-row"><span>' + x.s.label + '</span><div class="bar"><i style="width:' + Math.max(8, x.n / max * 100) + '%;background:' + x.s.color + '">' + x.n + '</i></div><span class="muted" style="text-align:right">' + Math.round(x.n / C.length * 100) + '%</span></div>';
+  }).join("");
+
+  /* interviews */
+  var up = DEMO.interviews.filter(function (i) { return i.status === "Scheduled"; }).slice(0, 4);
+  document.getElementById("today").innerHTML = up.map(function (i) {
+    var c = DEMO.cand(i.cand);
+    return '<div class="list-item"><div class="date-tile"><b>' + dayOf(i.date) + '</b><small>' + monOf(i.date) + '</small></div><div class="grow who"><div><b>' + c.name + '</b><small>' + i.round + ' · ' + i.time + ' · ' + i.mode + '</small></div></div>' + avatarStack(i.who) + '</div>';
+  }).join("");
+
+  /* trend: applications per day for last 14 days */
+  var labels = [], data = [];
+  for (var d = 13; d >= 0; d--) {
+    var dt = new Date(DEMO.today); dt.setDate(dt.getDate() - d);
+    var iso = dt.toISOString().slice(0, 10);
+    labels.push(dt.getDate() + " " + MONTHS[dt.getMonth()]);
+    data.push(C.filter(function (c) { return c.applied === iso; }).length + [1, 2, 0, 1, 3, 1, 0, 2, 1, 1, 2, 0, 1, 2][13 - d]);
+  }
+  document.getElementById("trend").innerHTML = lineChart([{ data: data, color: "var(--c1)" }], labels, { every: 2, h: 230 });
+
+  /* sources */
+  var src = {}; C.forEach(function (c) { src[c.source] = (src[c.source] || 0) + 1; });
+  var colors = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)", "var(--c6)"];
+  var parts = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 6).map(function (k, i) { return { l: k, v: src[k], c: colors[i] }; });
+  document.getElementById("sources").innerHTML = donut(parts, "candidates") + legend(parts);
+
+  /* vacancies */
+  document.getElementById("vacancies").innerHTML = J.map(function (j) {
+    return '<div style="margin-bottom:0.75rem"><div class="row" style="margin-bottom:0.3125rem"><b>' + j.title + '</b><span class="right muted">' + j.filled + ' of ' + j.openings + ' filled</span></div><div class="bar ' + (j.filled === j.openings ? "good" : "") + '"><i style="width:' + (j.filled / j.openings * 100) + '%"></i></div></div>';
+  }).join("");
+
+  /* AI */
+  var avg = Math.round(C.reduce(function (a, c) { return a + c.ai; }, 0) / C.length);
+  document.getElementById("ai").innerHTML =
+    '<div class="row" style="gap:1.25rem;margin-bottom:1rem">' + ring(avg, true) + '<div><div class="muted" style="font-size:var(--fs-sm)">Average resume match</div><div style="font-size:var(--fs-lg);font-weight:650">' + avg + ' out of 100</div><div class="hint">' + C.filter(function (c) { return c.ai >= 85; }).length + ' candidates scored above 85</div></div></div>' +
+    '<dl class="dl"><dt>Mailbox intake</dt><dd>9 emails read, 5 candidates created</dd><dt>Needs review</dt><dd>' + chip("2 low confidence", "warn") + '</dd><dt>Scored by AI</dt><dd>' + C.length + ' of ' + C.length + ' resumes</dd></dl>';
+
+  /* waiting table */
+  var wait = C.filter(function (c) { return c.stage === "applied" || c.stage === "offer"; }).sort(function (a, b) { return daysAgo(b.applied) - daysAgo(a.applied); });
+  document.getElementById("waiting").innerHTML = '<thead><tr><th>Candidate</th><th>Applied for</th><th>Stage</th><th>Applied</th><th class="num">Days waiting</th><th></th></tr></thead><tbody>' +
+    wait.map(function (c) { return '<tr><td>' + person(c.name, c.email) + '</td><td>' + DEMO.job(c.job).title + '</td><td>' + stageChip(c.stage) + '</td><td>' + fmtDate(c.applied) + '</td><td class="num">' + daysAgo(c.applied) + '</td><td class="act"><a class="btn sm" href="candidate-profile.html?id=' + c.id + '">Open</a></td></tr>'; }).join("") + '</tbody>';
+
+  document.getElementById("period").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) { return; }
+    [].forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); }); toast("Showing " + b.textContent.toLowerCase() + " (demo numbers do not change)");
+  });
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Zone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .zone-people { display: flex; flex-direction: column; gap: 0.25rem; }
+  .zone-people a { display: flex; align-items: center; gap: 0.625rem; padding: 0.4375rem 0.5rem; border-radius: 0.5rem; color: var(--ink); text-decoration: none; }
+  .zone-people a:hover { background: var(--surface-2); }
+  .zone-people .ai { margin-left: auto; font-size: var(--fs-xs); color: var(--ink-3); }
+</style>
+</head>
+<body data-module="recruitment" data-page="skill-zone" data-title="Skill Zone">
+<main id="page">
+  <div data-actions><button class="btn primary" id="new"><span data-i="plus"></span>New skill zone</button></div>
+  <div class="toolbar"><div class="field-search"><span data-i="search"></span><input id="q" type="search" placeholder="Search zones or people" aria-label="Search"></div></div>
+  <div class="grid g3" id="zones"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  function draw(q) {
+    var zs = DEMO.skillZones.filter(function (z) { return !q || (z.name + z.note + z.cands.map(function (id) { return DEMO.cand(id).name; }).join(" ")).toLowerCase().indexOf(q) >= 0; });
+    document.getElementById("zones").innerHTML = zs.map(function (z) {
+      var people = z.cands.map(DEMO.cand);
+      return '<article class="card"><div class="card-head"><h3>' + z.name + '<small>' + z.note + '</small></h3><div class="right"><button class="btn sm icon ghost" aria-label="Edit">' + icon("edit", "sm") + '</button></div></div>' +
+        '<div class="zone-people">' + people.slice(0, 4).map(function (c) { return '<a href="candidate-profile.html?id=' + c.id + '">' + avatar(c.name, "xs") + '<span>' + c.name + '</span><span class="ai">AI ' + c.ai + '</span></a>'; }).join("") + '</div>' +
+        '<div class="row" style="margin-top:0.75rem;border-top:1px solid var(--line);padding-top:0.75rem"><span class="muted">' + people.length + ' people</span>' + (people.length > 4 ? '<span class="faint">+' + (people.length - 4) + ' more</span>' : "") + '<button class="btn sm right">' + icon("plus", "sm") + 'Add person</button></div></article>';
+    }).join("") || '<div class="card empty" style="grid-column:1/-1">No zones match.</div>';
+  }
+  document.getElementById("q").addEventListener("input", function (e) { draw(e.target.value.toLowerCase()); });
+  document.getElementById("new").addEventListener("click", function () { openModal({ title: "New skill zone", body: '<div class="form-grid"><div class="full"><label class="lbl">Name <span class="req">*</span></label><input class="input"></div><div class="full"><label class="lbl">Description</label><textarea class="textarea"></textarea></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Create zone</button>' }); });
+  draw("");
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

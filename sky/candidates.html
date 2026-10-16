@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidates</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .sd { width: 0.42rem; height: 0.42rem; border-radius: 50%; flex: none; }
+  .crow { animation: skyIn 0.3s both; animation-delay: calc(var(--i, 0) * 22ms); }
+  .crow .who-a { color: inherit; text-decoration: none; display: contents; }
+  .crow .c-st { width: 5.4rem; flex: none; }
+  .crow .rx .stars svg { width: 0.7rem; height: 0.7rem; }
+  .crow .rx .nr { color: var(--ink-3); }
+
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.7rem; align-items: start; }
+  .cc { padding: 0.8rem 0.9rem; animation: skyIn 0.3s both; animation-delay: calc(var(--i, 0) * 25ms); }
+  .cc .top { display: flex; align-items: center; gap: 0.6rem; }
+  .cc .top .main { flex: 1 1 auto; min-width: 0; }
+  .cc .top b { font-weight: 600; font-size: var(--fs-md); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc .top small { color: var(--ink-3); font-size: var(--fs-xs); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc .st { margin-top: 0.55rem; display: flex; align-items: center; gap: 0.5rem; }
+  .cc .foot2 { margin-top: 0.5rem; }
+  .cc .meta { font-size: var(--fs-xs); gap: 0.25rem 0.8rem; }
+  .cc .meta svg.i { width: 0.75rem; height: 0.75rem; color: var(--ink-3); }
+  .cc .tags { margin-top: 0.5rem; }
+  .cc .tag { font-size: 0.62rem; }
+  .cc .foot2 { display: flex; align-items: center; font-size: var(--fs-xs); color: var(--ink-3); }
+
+  .fpanel { padding: 0.5rem 0.6rem 0.6rem; min-width: 15rem; }
+  .fpanel label { display: block; font-size: var(--fs-xs); color: var(--ink-3); margin: 0.5rem 0 0.2rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .fpanel .select { height: 2rem; }
+  .fpanel .clr { margin-top: 0.7rem; width: 100%; }
+
+  .bulk { position: sticky; bottom: 1rem; margin: 0.875rem auto 0; width: fit-content; background: var(--ink); color: var(--bg); border-radius: 99px; padding: 0.35rem 0.4rem 0.35rem 1rem; display: flex; gap: 0.4rem; align-items: center; box-shadow: var(--shadow-lg); z-index: 15; font-size: var(--fs-sm); }
+  .bulk .btn { background: transparent; border-color: color-mix(in srgb, var(--bg) 30%, transparent); color: var(--bg); border-radius: 99px; }
+  .bulk .btn:hover { background: color-mix(in srgb, var(--bg) 16%, transparent); }
+</style>
+</head>
+<body data-module="recruitment" data-page="candidates" data-title="Candidates">
+<main id="page">
+  <div data-actions>
+    <label class="xsearch" id="xs"><span data-i="search"></span><input id="q" type="search" placeholder="Search name, email, skill" aria-label="Search candidates"></label>
+    <button class="xbtn" id="filterBtn" aria-label="Filters"><span data-i="filter"></span><span class="xl" id="filterLbl">Filters</span></button>
+    <button class="xbtn" id="viewBtn" aria-label="Switch view"><span id="viewIco"></span><span class="xl" id="viewLbl">Card view</span></button>
+    <button class="xbtn" id="moreBtn" aria-label="Import or export"><span data-i="updown"></span><span class="xl">Import / Export</span></button>
+    <button class="xbtn primary" id="add" aria-label="Add candidate"><span data-i="plus"></span><span class="xl">Add candidate</span></button>
+  </div>
+
+  <div class="sub-bar" id="stages"></div>
+  <div id="out"></div>
+  <div class="bulk" id="bulk" hidden></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var state = { stage: "all", job: "0", source: "All sources", q: "", sort: "applied", v: "list", sel: {} };
+  var C = DEMO.candidates;
+  var sources = C.map(function (c) { return c.source; }).filter(function (s, i, a) { return a.indexOf(s) === i; }).sort();
+
+  function filtered(ignoreStage) {
+    return C.filter(function (c) {
+      var hay = (c.name + c.email + c.skills.join(" ")).toLowerCase();
+      return (ignoreStage || state.stage === "all" || c.stage === state.stage) && (state.job === "0" || c.job === +state.job) &&
+        (state.source === "All sources" || c.source === state.source) && (!state.q || hay.indexOf(state.q) >= 0);
+    }).sort(function (a, b) {
+      if (state.sort === "name") { return a.name.localeCompare(b.name); }
+      if (state.sort === "applied") { return a.applied < b.applied ? 1 : -1; }
+      return b[state.sort] - a[state.sort];
+    });
+  }
+  function activeFilters() { return (state.job !== "0" ? 1 : 0) + (state.source !== "All sources" ? 1 : 0) + (state.sort !== "applied" ? 1 : 0); }
+  function syncButtons() {
+    var n = activeFilters();
+    document.getElementById("filterLbl").innerHTML = n ? 'Filters <span class="n">' + n + '</span>' : "Filters";
+    document.getElementById("viewIco").innerHTML = icon(state.v === "list" ? "grid" : "list");
+    document.getElementById("viewLbl").textContent = state.v === "list" ? "Card view" : "List view";
+    fitX(document.getElementById("head-actions"));
+  }
+  function drawStages() {
+    var base = filtered(true);
+    var items = [["all", "All", base.length]].concat(DEMO.stages.map(function (s) {
+      return [s.id, '<span class="sd" style="background:' + s.color + '"></span>' + s.label, base.filter(function (c) { return c.stage === s.id; }).length];
+    }));
+    document.getElementById("stages").innerHTML = pills(items, state.stage);
+  }
+  function drawBulk() {
+    var n = Object.keys(state.sel).length, b = document.getElementById("bulk");
+    b.hidden = !n;
+    b.innerHTML = '<b>' + n + ' selected</b><button class="btn sm" data-b="stage">Move stage</button><button class="btn sm" data-b="mail">Send mail</button><button class="btn sm" data-b="zone">Skill zone</button><button class="btn sm icon" data-b="clear" aria-label="Clear selection">' + icon("x", "sm") + '</button>';
+  }
+  function rowHtml(c, i) {
+    var picked = !!state.sel[c.id];
+    return '<div class="lrow crow hov' + (picked ? " sel" : "") + '" style="--i:' + Math.min(i, 14) + '"><input type="checkbox" class="chk" data-sel="' + c.id + '"' + (picked ? " checked" : "") + ' aria-label="Select ' + c.name + '">' +
+      avatar(c.name) + '<div class="main"><b>' + c.name + '</b><small>' + DEMO.job(c.job).title + '</small></div>' +
+      '<div class="c-st">' + stageChip(c.stage) + '</div>' + ring(c.ai) +
+      '<div class="rx">' + (c.rating ? stars(c.rating) : '<span class="nr">Not rated</span>') + '<span class="sep-dot opt">·</span><span class="opt">' + c.source + '</span><span class="sep-dot opt">·</span><span class="opt">' + ago(c.applied) + '</span><a class="btn sm" href="candidate-profile.html?id=' + c.id + '">Open</a></div></div>';
+  }
+  function cardHtml(c, i) {
+    return '<article class="card cc hov lift" tabindex="0" style="--i:' + Math.min(i, 14) + '"><div class="top">' + avatar(c.name, "md") + '<div class="main"><b>' + c.name + '</b><small>' + DEMO.job(c.job).title + '</small></div>' + ring(c.ai) + '</div>' +
+      '<div class="st">' + stageChip(c.stage) + (c.rating ? stars(c.rating) : "") + '</div>' +
+      '<div class="peek"><div class="in"><div class="meta"><span>' + icon("pin") + c.loc + '</span><span>' + icon("briefcase") + c.exp + ' yrs</span><span>' + icon("clock") + c.notice + '</span></div>' +
+      '<div class="tags">' + c.skills.slice(0, 4).map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div>' +
+      '<div class="foot2"><span>' + c.source + ' · ' + ago(c.applied) + '</span><a class="btn sm right" href="candidate-profile.html?id=' + c.id + '">Open profile</a></div></div></div></article>';
+  }
+  function draw() {
+    var list = filtered(), out = document.getElementById("out");
+    if (!list.length) { out.innerHTML = '<div class="card empty">' + icon("search", "lg") + '<p style="margin-top:0.5rem">No candidates match these filters.</p></div>'; return; }
+    out.innerHTML = state.v === "list" ? '<div class="clist">' + list.map(rowHtml).join("") + '</div><div class="faint" style="font-size:var(--fs-xs);padding:0.3rem 0.2rem">Showing ' + list.length + ' of ' + C.length + '</div>' : '<div class="cgrid">' + list.map(cardHtml).join("") + '</div>';
+  }
+  function redraw() { syncButtons(); drawStages(); draw(); drawBulk(); }
+
+  document.getElementById("stages").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (b) { state.stage = b.dataset.t; redraw(); } });
+  var xs = document.getElementById("xs"), q = document.getElementById("q");
+  xs.addEventListener("click", function () { q.focus(); });
+  q.addEventListener("input", function () { state.q = q.value.toLowerCase(); xs.classList.toggle("has", !!q.value); redraw(); });
+  document.getElementById("viewBtn").addEventListener("click", function () { state.v = state.v === "list" ? "cards" : "list"; syncButtons(); draw(); });
+
+  /* the three secondary filters live in one small panel */
+  document.getElementById("filterBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var opt = function (arr, cur) { return arr.map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === cur ? " selected" : "") + '>' + a[1] + '</option>'; }).join(""); };
+    var m = skyMenu(this, '<div class="fpanel"><label>Job opening</label><select class="select" data-k="job">' + opt([["0", "All job openings"]].concat(DEMO.jobs.map(function (j) { return [String(j.id), j.title]; })), state.job) + '</select>' +
+      '<label>Source</label><select class="select" data-k="source">' + opt(["All sources"].concat(sources).map(function (s) { return [s, s]; }), state.source) + '</select>' +
+      '<label>Sort by</label><select class="select" data-k="sort">' + opt([["applied", "Newest first"], ["ai", "AI score"], ["rating", "Rating"], ["name", "Name"]], state.sort) + '</select>' +
+      '<button class="btn sm clr" data-reset>Reset filters</button></div>', null, 250);
+    if (!m) { return; }
+    m.addEventListener("change", function (ev) { var k = ev.target.dataset.k; if (k) { state[k] = ev.target.value; redraw(); } });
+    m.querySelector("[data-reset]").addEventListener("click", function () { state.job = "0"; state.source = "All sources"; state.sort = "applied"; closeSkyMenu(); redraw(); });
+  });
+  document.getElementById("moreBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    skyMenu(this, '<button class="item" data-pick="import">' + icon("upload", "sm") + 'Import candidates</button><button class="item" data-pick="export">' + icon("download", "sm") + 'Export to Excel</button>', function (v) { toast((v === "import" ? "Import" : "Export") + " (demo only)"); }, 190);
+  });
+  document.getElementById("out").addEventListener("change", function (e) {
+    if (e.target.dataset.sel) { if (e.target.checked) { state.sel[e.target.dataset.sel] = 1; } else { delete state.sel[e.target.dataset.sel]; } e.target.closest(".lrow").classList.toggle("sel", e.target.checked); drawBulk(); }
+  });
+  document.getElementById("bulk").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-b]"); if (!b) { return; }
+    if (b.dataset.b === "clear") { state.sel = {}; draw(); drawBulk(); } else { toast("Bulk action: " + b.textContent.trim() + " (demo only)"); }
+  });
+  document.getElementById("add").addEventListener("click", function () {
+    openDrawer({ title: "Add candidate", body:
+      '<div class="form-grid"><div><label class="lbl">Full name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Email <span class="req">*</span></label><input class="input" type="email"></div>' +
+      '<div><label class="lbl">Mobile</label><input class="input"></div><div><label class="lbl">Job opening</label><select class="select">' + DEMO.jobs.map(function (j) { return "<option>" + j.title + "</option>"; }).join("") + '</select></div>' +
+      '<div><label class="lbl">Source</label><select class="select">' + sources.map(function (s) { return "<option>" + s + "</option>"; }).join("") + '</select></div><div><label class="lbl">Resume</label><input class="input" type="file"></div></div>',
+      foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Save candidate</button>' });
+  });
+  redraw();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

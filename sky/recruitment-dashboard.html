@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .split2 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+  .split2.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 880px) { .split2, .split2.even { grid-template-columns: minmax(0, 1fr); } }
+
+  /* pipeline: slim bars that grow on hover and show the share */
+  .fun { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) 2rem; gap: 0.6rem; align-items: center; padding: 0.22rem 0.35rem; margin: 0 -0.35rem; border-radius: 0.6rem; font-size: var(--fs-sm); transition: background 0.15s; }
+  .fun:hover { background: var(--sky-wash); }
+  .fun .track { height: 0.55rem; border-radius: 99px; background: var(--surface-2); overflow: hidden; transition: height 0.2s ease; }
+  .fun:hover .track { height: 0.8rem; }
+  .fun .track i { display: block; height: 100%; border-radius: 99px; transform-origin: left; animation: grow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .fun .cnt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fun .share { color: var(--ink-3); font-size: var(--fs-xs); margin-left: 0.3rem; font-weight: 400; opacity: 0; transition: opacity 0.15s; }
+  .fun:hover .share { opacity: 1; }
+
+  /* interview rows */
+  .iv { display: flex; align-items: center; gap: 0.65rem; padding: 0.45rem 0.35rem; margin: 0 -0.35rem; border-radius: 0.75rem; transition: background 0.15s, transform 0.15s; }
+  .iv:hover { background: var(--sky-wash); transform: scale(1.015); }
+  .iv .when { width: 2.7rem; text-align: center; border-radius: 0.65rem; background: var(--sky-soft); color: var(--brand-strong); padding: 0.2rem 0; line-height: 1.05; flex: none; }
+  .iv .when b { display: block; font-size: 0.9rem; font-weight: 600; }
+  .iv .when small { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .iv .info { flex: 1 1 auto; min-width: 0; }
+  .iv .info b { font-weight: 600; font-size: var(--fs-sm); display: block; }
+  .iv .info small { color: var(--ink-3); font-size: var(--fs-xs); display: block; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.25s, opacity 0.2s; }
+  .iv:hover .info small { max-height: 1.4rem; opacity: 1; }
+  .iv .av-stack { opacity: 0; transition: opacity 0.2s; }
+  .iv:hover .av-stack { opacity: 1; }
+
+  .vac { padding: 0.4rem 0.5rem; margin: 0 -0.5rem; border-radius: 0.7rem; transition: background 0.15s; }
+  .vac:hover { background: var(--sky-wash); }
+  .vac .r { display: flex; align-items: center; gap: 0.5rem; font-size: var(--fs-sm); margin-bottom: 0.3rem; }
+  .vac .r span { margin-left: auto; color: var(--ink-3); font-size: var(--fs-xs); }
+  .vac .bar { transition: height 0.2s; }
+  .vac:hover .bar { height: 0.55rem; }
+  .big { font-size: var(--fs-lg); font-weight: 600; }
+  .legend { font-size: var(--fs-xs); }
+</style>
+</head>
+<body data-module="recruitment" data-page="dashboard" data-title="Dashboard">
+<main id="page">
+  <div data-actions>
+    <button class="xbtn" id="periodBtn" aria-label="Period"><span data-i="calendar"></span><span class="xl" id="periodLbl">This month</span></button>
+    <button class="xbtn" id="custom" aria-label="Customize"><span data-i="sliders"></span><span class="xl">Customize</span></button>
+  </div>
+
+  <div class="stats" id="kpis"></div>
+
+  <div class="sub-bar" id="tabs"></div>
+  <div id="panel" class="panel"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var C = DEMO.candidates, J = DEMO.jobs;
+  var live = C.filter(function (c) { return c.stage !== "hired" && c.stage !== "cancelled"; });
+  var hired = C.filter(function (c) { return c.stage === "hired"; });
+  var openJobs = J.filter(function (j) { return j.status === "open"; });
+  var wait = C.filter(function (c) { return c.stage === "applied" || c.stage === "offer"; }).sort(function (a, b) { return daysAgo(b.applied) - daysAgo(a.applied); });
+
+  /* four quiet tiles; the change since last time slides open on hover */
+  var kpis = [
+    ["briefcase", "Active recruitments", openJobs.length, "<b>+2</b> since last month"],
+    ["users", "In pipeline", live.length, "<b>+9</b> this week"],
+    ["check", "Hired this quarter", hired.length, "<b>3</b> still to join"],
+    ["clock", "Days to hire", 21, "<b class='neg'>+2 days</b> vs last quarter"]
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(function (k) {
+    return '<div class="stat lift hov" tabindex="0"><span class="ico">' + icon(k[0]) + '</span><div><div class="num">' + k[2] + '</div><div class="lbl">' + k[1] + '</div><div class="peek"><div class="in">' + k[3] + '</div></div></div></div>';
+  }).join("");
+
+  /* ---- the sub-pages ---- */
+  var TABS = [["overview", "Overview"], ["trends", "Trends"], ["vacancies", "Vacancies", openJobs.length], ["ai", "AI"], ["waiting", "Waiting", wait.length]];
+  var cur = (location.hash || "#overview").slice(1); if (!TABS.some(function (t) { return t[0] === cur; })) { cur = "overview"; }
+
+  var panels = {
+    overview: function () {
+      var counts = DEMO.stages.map(function (s) { return { s: s, n: C.filter(function (c) { return c.stage === s.id; }).length }; });
+      var max = Math.max.apply(null, counts.map(function (x) { return x.n; }));
+      var up = DEMO.interviews.filter(function (i) { return i.status === "Scheduled"; }).slice(0, 3);
+      return '<div class="split2"><div class="card"><div class="card-head"><h3>Hiring pipeline</h3><div class="right"><a class="btn sm ghost" href="pipeline.html">Open board</a></div></div>' +
+        counts.map(function (x) { return '<div class="fun"><span>' + x.s.label + '</span><div class="track"><i style="width:' + Math.max(6, x.n / max * 100) + '%;background:' + x.s.color + '"></i></div><span class="cnt">' + x.n + '<span class="share">' + Math.round(x.n / C.length * 100) + '%</span></span></div>'; }).join("") + '</div>' +
+        '<div class="card"><div class="card-head"><h3>Coming up</h3><div class="right"><a class="btn sm ghost" href="interviews.html">All</a></div></div>' +
+        up.map(function (i) { var c = DEMO.cand(i.cand); return '<div class="iv"><div class="when"><b>' + dayOf(i.date) + '</b><small>' + monOf(i.date) + '</small></div><div class="info"><b>' + c.name + '</b><small>' + i.round + ' · ' + i.time + ' · ' + i.mode + '</small></div>' + avatarStack(i.who) + '</div>'; }).join("") + '</div></div>';
+    },
+    trends: function () {
+      var labels = [], data = [];
+      for (var d = 13; d >= 0; d--) {
+        var dt = new Date(DEMO.today); dt.setDate(dt.getDate() - d);
+        var iso = dt.toISOString().slice(0, 10);
+        labels.push(dt.getDate() + " " + MONTHS[dt.getMonth()]);
+        data.push(C.filter(function (c) { return c.applied === iso; }).length + [1, 2, 0, 1, 3, 1, 0, 2, 1, 1, 2, 0, 1, 2][13 - d]);
+      }
+      var src = {}; C.forEach(function (c) { src[c.source] = (src[c.source] || 0) + 1; });
+      var colors = ["#0369a1", "#0ea5e9", "#38bdf8", "#7dd3fc", "#6366f1", "#9db4c8"];
+      var parts = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 6).map(function (k, i) { return { l: k, v: src[k], c: colors[i] }; });
+      return '<div class="split2"><div class="card"><div class="card-head"><h3>Applications by day<small>Last 14 days</small></h3></div>' + lineChart([{ data: data, color: "#0ea5e9" }], labels, { every: 2, h: 210 }) + '</div>' +
+        '<div class="card"><div class="card-head"><h3>Where they come from</h3></div>' + donut(parts, "candidates") + legend(parts) + '</div></div>';
+    },
+    vacancies: function () {
+      return '<div class="card"><div class="card-head"><h3>Filled vs open<small>Per recruitment</small></h3></div><div class="split2 even" style="gap:0 2rem">' + J.map(function (j) {
+        return '<div class="vac"><div class="r"><b>' + j.title + '</b><span>' + j.filled + ' of ' + j.openings + '</span></div><div class="bar ' + (j.filled === j.openings ? "good" : "") + '"><i style="width:' + (j.filled / j.openings * 100) + '%"></i></div></div>';
+      }).join("") + '</div></div>';
+    },
+    ai: function () {
+      var avg = Math.round(C.reduce(function (a, c) { return a + c.ai; }, 0) / C.length);
+      return '<div class="card" style="max-width:40rem"><div class="card-head"><h3>AI effectiveness<small>Resume scoring and mailbox intake</small></h3></div><div class="row" style="gap:1.1rem;margin-bottom:0.9rem">' + ring(avg, true) + '<div><div class="muted" style="font-size:var(--fs-sm)">Average resume match</div><div class="big">' + avg + ' out of 100</div><div class="hint">' + C.filter(function (c) { return c.ai >= 85; }).length + ' candidates scored above 85</div></div></div>' +
+        '<dl class="dl"><dt>Mailbox intake</dt><dd>9 emails read, 5 candidates created</dd><dt>Needs review</dt><dd>' + chip("2 low confidence", "warn") + '</dd><dt>Scored by AI</dt><dd>' + C.length + ' of ' + C.length + ' resumes</dd></dl></div>';
+    },
+    waiting: function () {
+      return '<div class="card"><div class="card-head"><h3>Waiting for a response<small>Longest first</small></h3></div>' + wait.map(function (c) {
+        return '<div class="lrow hov"><span>' + avatar(c.name) + '</span><div class="main"><b>' + c.name + '</b><small>' + DEMO.job(c.job).title + '</small></div>' + stageChip(c.stage) +
+          '<span class="chip" style="min-width:4.2rem;justify-content:center">' + daysAgo(c.applied) + ' days</span><div class="rx"><a class="btn sm" href="candidate-profile.html?id=' + c.id + '">Open</a></div></div>';
+      }).join("") + '</div>';
+    }
+  };
+
+  function show() {
+    document.getElementById("tabs").innerHTML = pills(TABS, cur);
+    var p = document.getElementById("panel"); p.innerHTML = panels[cur](); p.classList.remove("panel"); void p.offsetWidth; p.classList.add("panel");
+  }
+  document.getElementById("tabs").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (b) { cur = b.dataset.t; try { history.replaceState(null, "", "#" + cur); } catch (x) {} show(); } });
+  document.getElementById("periodBtn").addEventListener("click", function () {
+    var self = this;
+    skyMenu(self, '<h4>Period</h4>' + ["This month", "Last month", "Quarter"].map(function (p) { return '<button class="item' + (document.getElementById("periodLbl").textContent === p ? " on" : "") + '" data-pick="' + p + '">' + p + '</button>'; }).join(""), function (v) { document.getElementById("periodLbl").textContent = v; fitX(document.getElementById("head-actions")); toast("Showing " + v.toLowerCase() + " (demo numbers do not change)"); }, 170);
+  });
+  document.getElementById("custom").addEventListener("click", function () { toast("Customize: choose which tabs to show (demo only)"); });
+  show();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Careers at Ariel Software Solutions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  body.public { background: var(--surface); overflow-x: hidden; }
+  .wrap { width: min(76rem, 100%); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ---- nav ---- */
+  .nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(0.75rem); background: color-mix(in srgb, var(--surface) 82%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+  .nav .wrap { display: flex; align-items: center; height: 4.25rem; gap: 2rem; }
+  .brand { display: flex; align-items: center; gap: 0.625rem; font-weight: 800; font-size: 1.0625rem; color: inherit; text-decoration: none; letter-spacing: -0.01em; }
+  .logo { width: 2.375rem; height: 2.375rem; border-radius: 0.75rem; background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; display: grid; place-items: center; font-weight: 800; box-shadow: 0 0.375rem 1rem color-mix(in srgb, #2563eb 35%, transparent); }
+  .nav nav { display: flex; gap: 1.5rem; margin-left: auto; color: var(--ink-2); font-weight: 500; }
+  .nav nav a { color: inherit; text-decoration: none; } .nav nav a:hover { color: var(--brand); }
+  @media (max-width: 720px) { .nav nav a:not(.cta) { display: none; } }
+  .cta { background: var(--ink); color: var(--surface) !important; padding: 0.5rem 1.125rem; border-radius: 999px; font-weight: 600; }
+
+  /* ---- hero ---- */
+  .hero { position: relative; overflow: hidden; padding: 3.5rem 0 5rem; background: radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, #38bdf8 26%, transparent), transparent 60%), radial-gradient(40rem 26rem at -5% 30%, color-mix(in srgb, #2563eb 14%, transparent), transparent 60%); }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 3rem; align-items: center; }
+  @media (max-width: 920px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } .hero { padding: 2.5rem 0 3rem; } .art { display: none; } }
+  .eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.875rem 0.375rem 0.5rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: var(--fs-sm); font-weight: 600; box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--brand) 10%, transparent); }
+  .eyebrow i { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0.25rem color-mix(in srgb, #22c55e 25%, transparent); animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 0.5rem transparent; } }
+  .hero h1 { font-size: clamp(2.5rem, 5.2vw, 4.25rem); line-height: 1.04; font-weight: 800; letter-spacing: -0.035em; margin: 1.25rem 0 1.125rem; }
+  .grad { background: linear-gradient(100deg, #2563eb, #0ea5e9 55%, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.lead { font-size: 1.125rem; line-height: 1.6; color: var(--ink-3); max-width: 34rem; }
+  .find { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.75rem; max-width: 34rem; padding: 0.375rem 0.375rem 0.375rem 1.125rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--brand) 14%, transparent); }
+  .find:focus-within { border-color: var(--brand); }
+  .find svg { width: 1.125rem; height: 1.125rem; color: var(--ink-3); flex: none; }
+  .find input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; height: 2.75rem; color: inherit; }
+  .find button { height: 2.75rem; padding: 0 1.5rem; border: 0; border-radius: 999px; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .quick { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; align-items: center; color: var(--ink-3); font-size: var(--fs-sm); }
+  .quick button { border: 0; background: color-mix(in srgb, var(--brand) 9%, var(--surface)); color: var(--brand); border-radius: 999px; padding: 0.3125rem 0.875rem; font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+  .quick button:hover { background: var(--brand); color: #fff; }
+  .proof { display: flex; align-items: center; gap: 0.875rem; margin-top: 2rem; color: var(--ink-3); font-size: var(--fs-sm); }
+  .proof .fstack { display: inline-flex; } .proof .fstack .av { width: 2.25rem; height: 2.25rem; border: 2px solid var(--surface); margin-left: -0.625rem; } .proof .fstack .av:first-child { margin-left: 0; }
+  .proof b { color: var(--ink); }
+
+  /* hero art: floating role cards on a gradient disc */
+  .art { position: relative; height: 26rem; }
+  .disc { position: absolute; inset: 1rem 0 1rem 2rem; border-radius: 2rem; background: linear-gradient(145deg, #2563eb, #38bdf8 70%, #67e8f9); box-shadow: 0 2rem 4rem color-mix(in srgb, #2563eb 35%, transparent); overflow: hidden; }
+  .disc::before, .disc::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,0.14); }
+  .disc::before { width: 16rem; height: 16rem; right: -5rem; top: -5rem; } .disc::after { width: 11rem; height: 11rem; left: -3rem; bottom: -3rem; }
+  .fl { position: absolute; background: var(--surface); border-radius: 1.125rem; padding: 0.875rem 1rem; box-shadow: 0 1.25rem 2.5rem rgba(8, 20, 50, 0.22); display: flex; align-items: center; gap: 0.75rem; animation: float 6s ease-in-out infinite; min-width: 14rem; }
+  .fl .dot { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: grid; place-items: center; color: #fff; font-weight: 800; flex: none; }
+  .fl b { display: block; } .fl small { color: var(--ink-3); }
+  .fl:nth-child(2) { top: 14%; left: 0; animation-delay: -1s; } .fl:nth-child(3) { top: 40%; right: -1rem; animation-delay: -3s; } .fl:nth-child(4) { bottom: 12%; left: 14%; animation-delay: -5s; }
+  @keyframes float { 50% { transform: translateY(-0.75rem); } }
+  @media (prefers-reduced-motion: reduce) { .fl, .eyebrow i { animation: none; } }
+
+  /* ---- stats strip ---- */
+  .strip { border-block: 1px solid var(--line); background: var(--surface-2); }
+  .strip .wrap { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .strip .s { padding: 1.5rem 1rem; text-align: center; border-left: 1px solid var(--line); } .strip .s:first-child { border-left: 0; }
+  .strip b { display: block; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; } .strip span { color: var(--ink-3); font-size: var(--fs-sm); }
+  @media (max-width: 720px) { .strip .wrap { grid-template-columns: 1fr 1fr; } .strip .s:nth-child(3) { border-left: 0; } .strip .s:nth-child(n+3) { border-top: 1px solid var(--line); } }
+
+  /* ---- roles ---- */
+  .roles { padding: 4rem 0 4rem; }
+  .roles-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+  .roles-head h2 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; } .roles-head p { color: var(--ink-3); margin-top: 0.25rem; }
+  .tabs { display: flex; gap: 0.375rem; flex-wrap: wrap; padding: 0.3125rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .tabs button { border: 0; background: none; padding: 0.4375rem 1rem; border-radius: 999px; font: inherit; font-weight: 600; color: var(--ink-3); cursor: pointer; }
+  .tabs button:hover { color: var(--ink); } .tabs button.on { background: var(--surface); color: var(--brand); box-shadow: 0 0.125rem 0.5rem color-mix(in srgb, #000 10%, transparent); }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } } @media (max-width: 640px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .job { --a: #2563eb; --b: #38bdf8; display: flex; flex-direction: column; border-radius: 1.5rem; background: var(--surface); border: 1px solid var(--line); overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s; animation: rise .5s both; text-align: left; font: inherit; color: inherit; padding: 0; }
+  .job:hover { transform: translateY(-0.375rem); box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--a) 22%, transparent); }
+  @keyframes rise { from { opacity: 0; transform: translateY(1rem); } }
+  .job .top { position: relative; height: 6.5rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, var(--a), var(--b)); color: #fff; overflow: hidden; display: flex; justify-content: space-between; align-items: flex-start; }
+  .job .top .big { position: absolute; right: -0.5rem; bottom: -2.25rem; font-size: 8rem; font-weight: 800; line-height: 1; opacity: 0.2; letter-spacing: -0.05em; }
+  .job .dept { background: rgba(255,255,255,0.22); backdrop-filter: blur(0.25rem); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: var(--fs-sm); font-weight: 600; }
+  .job .new { background: #fff; color: var(--a); padding: 0.1875rem 0.625rem; border-radius: 999px; font-size: var(--fs-xs); font-weight: 800; }
+  .job .body { padding: 1.125rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; flex: 1; }
+  .job h3 { font-size: 1.25rem; font-weight: 750; letter-spacing: -0.015em; line-height: 1.25; }
+  .job .meta { display: flex; flex-wrap: wrap; gap: 0.375rem 0.875rem; color: var(--ink-3); font-size: var(--fs-sm); }
+  .job .meta span { display: inline-flex; align-items: center; gap: 0.375rem; } .job .meta svg { width: 0.9375rem; height: 0.9375rem; }
+  .job .tags { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .job .tags span { padding: 0.1875rem 0.625rem; border-radius: 999px; font-size: var(--fs-xs); font-weight: 600; background: color-mix(in srgb, var(--a) 10%, var(--surface)); color: var(--a); }
+  .job .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 0.875rem; border-top: 1px dashed var(--line); font-size: var(--fs-sm); color: var(--ink-3); }
+  .job .foot b { color: var(--ink); } .soon { color: #b45309; font-weight: 700; }
+  .job .go { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--a) 12%, var(--surface)); color: var(--a); transition: all .2s; }
+  .job .go svg { width: 1.125rem; height: 1.125rem; } .job:hover .go { background: var(--a); color: #fff; transform: translateX(0.25rem); }
+  .none { grid-column: 1 / -1; padding: 3rem; text-align: center; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 1.5rem; }
+
+  /* ---- closing call to action ---- */
+  .join { margin: 1rem 0 4rem; }
+  .join .box { position: relative; overflow: hidden; border-radius: 2rem; padding: 3rem; background: linear-gradient(135deg, #0f172a, #1e3a8a 60%, #2563eb); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+  .join .box::after { content: ""; position: absolute; right: -4rem; top: -6rem; width: 20rem; height: 20rem; border-radius: 50%; background: radial-gradient(closest-side, rgba(56,189,248,0.5), transparent); }
+  .join h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.025em; } .join p { color: #bfdbfe; margin-top: 0.375rem; max-width: 32rem; }
+  .join button { position: relative; z-index: 1; height: 3.25rem; padding: 0 2rem; border: 0; border-radius: 999px; background: #fff; color: #1e3a8a; font: inherit; font-weight: 700; cursor: pointer; }
+  footer { border-top: 1px solid var(--line); padding: 1.5rem 0; color: var(--ink-3); font-size: var(--fs-sm); text-align: center; }
+
+  /* ---- role modal ---- */
+  .rm-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.125rem; color: var(--ink-2); }
+  .rm-meta span { display: inline-flex; align-items: center; gap: 0.4375rem; } .rm-meta svg { width: 1rem; height: 1rem; color: var(--ink-3); }
+  .rm-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; margin: 1rem 0; padding: 0.875rem 1rem; border-radius: 0.875rem; background: var(--surface-2); }
+  .rm-facts small { display: block; color: var(--ink-3); font-size: var(--fs-xs); } .rm-facts b { font-weight: 650; }
+  .rm h4 { margin: 1.125rem 0 0.4375rem; font-size: var(--fs-md); } .rm p { line-height: 1.7; color: var(--ink-2); }
+  .rm .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; } .rm .tags span { background: var(--brand-soft); color: var(--brand); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: var(--fs-sm); }
+  .drop { text-align: center; border: 1px dashed var(--line); border-radius: 0.875rem; padding: 1.25rem; color: var(--ink-3); cursor: pointer; } .drop:hover { border-color: var(--brand); color: var(--brand); } .drop svg { width: 1.5rem; height: 1.5rem; }
+</style>
+</head>
+<body class="public">
+
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="eyebrow"><i></i><span id="eyebrow">We're hiring</span></span>
+    <h1>Build things people <span class="grad">actually use.</span></h1>
+    <p class="lead">Join a close-knit product and services team in Gurugram. Real ownership, honest feedback and work that ships every week.</p>
+    <div class="find"><span data-i="search"></span><input id="q" type="search" placeholder="Search roles, skills or departments" aria-label="Search roles"><button id="findBtn">Find roles</button></div>
+    <div class="quick" id="quick"></div>
+    <div class="proof"><span class="fstack" id="faces"></span><span><b>Come and meet us.</b> People who started here as freshers now lead teams.</span></div>
+  </div>
+  <div class="art" aria-hidden="true">
+    <div class="disc"></div>
+    <div class="fl" id="f1"></div><div class="fl" id="f2"></div><div class="fl" id="f3"></div>
+  </div>
+</div></section>
+
+<section class="strip"><div class="wrap" id="stats"></div></section>
+
+<section class="roles" id="roles"><div class="wrap">
+  <div class="roles-head"><div><h2>Open roles</h2><p id="count"></p></div><div class="tabs" id="tabs"></div></div>
+  <div class="grid" id="out"></div>
+</div></section>
+
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  var open = DEMO.jobs.filter(function (j) { return j.status === "open" && j.published !== false; });
+  var depts = ["All"].concat(open.map(function (j) { return j.dept; }).filter(function (d, i, a) { return a.indexOf(d) === i; }));
+  var PAL = { "Development": ["#2563eb", "#38bdf8"], "Designing": ["#7c3aed", "#c084fc"], "Human Resource": ["#0d9488", "#5eead4"], "Accounts": ["#d97706", "#fbbf24"], "Business Development": ["#db2777", "#fb7185"] };
+  var pal = function (d) { return PAL[d] || ["#2563eb", "#38bdf8"]; };
+  var state = { d: "All", q: "" };
+  var daysTo = function (iso) { return Math.round((new Date(iso + "T12:00:00") - new Date(DEMO.today + "T12:00:00")) / 86400000); };
+  var esc = function (t) { return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+  var positions = open.reduce(function (n, j) { return n + j.openings - j.filled; }, 0);
+
+  document.getElementById("eyebrow").textContent = "We're hiring · " + open.length + " open roles";
+  document.getElementById("stats").innerHTML = [[open.length, "Open roles"], [depts.length - 1, "Departments"], [positions, "Positions to fill"], ["2 min", "To apply"]].map(function (s) { return '<div class="s"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>'; }).join("");
+  document.getElementById("faces").innerHTML = DEMO.team.slice(0, 5).map(function (n) { return avatar(n); }).join("");
+  [open[0], open[1], open[2]].forEach(function (j, i) {
+    var el = document.getElementById("f" + (i + 1)); if (!j) { el.remove(); return; }
+    var p = pal(j.dept); el.innerHTML = '<span class="dot" style="background:linear-gradient(135deg,' + p[0] + ',' + p[1] + ')">' + esc(j.title.charAt(0)) + '</span><span><b>' + esc(j.title) + '</b><small>' + esc(j.loc) + ' &middot; ' + esc(j.type) + '</small></span>';
+  });
+  document.getElementById("quick").innerHTML = '<span>Popular:</span>' + depts.slice(1, 4).map(function (d) { return '<button data-d="' + d + '">' + d + '</button>'; }).join("");
+
+  function visible() { return open.filter(function (j) { return (state.d === "All" || j.dept === state.d) && (!state.q || (j.title + " " + j.dept + " " + j.skills.join(" ")).toLowerCase().indexOf(state.q) >= 0); }); }
+  function drawTabs() { document.getElementById("tabs").innerHTML = depts.map(function (d) { return '<button class="' + (state.d === d ? "on" : "") + '" data-d="' + d + '">' + d + '</button>'; }).join(""); }
+  function draw() {
+    var list = visible();
+    document.getElementById("count").textContent = list.length + " role" + (list.length === 1 ? "" : "s") + " matching" + (state.d === "All" ? "" : " in " + state.d);
+    document.getElementById("out").innerHTML = list.length ? list.map(function (j, i) {
+      var p = pal(j.dept), left = j.openings - j.filled, d = daysTo(j.end), isNew = daysTo(j.start) >= -14;
+      return '<button class="job" data-id="' + j.id + '" style="--a:' + p[0] + ';--b:' + p[1] + ';animation-delay:' + (i * 60) + 'ms"><div class="top"><span class="dept">' + esc(j.dept) + '</span>' + (isNew ? '<span class="new">NEW</span>' : "") + '<span class="big">' + esc(j.title.charAt(0)) + '</span></div>' +
+        '<div class="body"><h3>' + esc(j.title) + '</h3><div class="meta"><span>' + icon("pin", "sm") + esc(j.loc) + '</span><span>' + icon("clock", "sm") + esc(j.type) + '</span><span>' + icon("briefcase", "sm") + esc(j.exp) + '</span></div>' +
+        '<div class="tags">' + j.skills.slice(0, 3).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join("") + (j.skills.length > 3 ? '<span>+' + (j.skills.length - 3) + '</span>' : "") + '</div>' +
+        '<div class="foot"><span><b>' + left + '</b> position' + (left === 1 ? "" : "s") + ' &middot; ' + (d >= 0 && d <= 7 ? '<span class="soon">closes in ' + d + 'd</span>' : "closes " + shortDate(j.end)) + '</span><span class="go">' + icon("right", "sm") + '</span></div></div></button>';
+    }).join("") : '<div class="none">No roles match your search. Try another word, or send us your resume below.</div>';
+  }
+
+  function formModal(title, j) {
+    var optR = j && !!j.optResume, optI = j && !!j.optImage;
+    var m = openModal({ title: title, wide: true, body:
+      '<div class="form-grid"><div><label class="lbl">Full name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Email <span class="req">*</span></label><input class="input" type="email"></div>' +
+      '<div><label class="lbl">Mobile</label><input class="input"></div><div><label class="lbl">Total experience</label><input class="input" placeholder="Years"></div>' +
+      '<div class="full"><label class="lbl">Resume' + (optR ? ' <span class="muted">(optional)</span>' : ' <span class="req">*</span>') + '</label><div class="drop">' + icon("upload", "lg") + '<div style="margin-top:0.375rem">Drop a PDF or Word file here, or click to browse</div></div></div>' +
+      (optI ? "" : '<div class="full"><label class="lbl">Profile image' + (j ? ' <span class="req">*</span>' : ' <span class="muted">(optional)</span>') + '</label><div class="drop">' + icon("camera", "lg") + '<div style="margin-top:0.375rem">Add a clear photo of yourself</div></div></div>') +
+      '<div class="full"><label class="lbl">Anything else we should know</label><textarea class="textarea" style="height:5rem"></textarea></div></div>',
+      foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="sub">Submit application</button>' });
+    m.querySelector("#sub").addEventListener("click", function () { m.remove(); toast("Application submitted (demo only)"); });
+  }
+  function detail(j) {
+    var left = j.openings - j.filled;
+    var m = openModal({ title: esc(j.title), wide: true, body: '<div class="rm"><div class="rm-meta"><span>' + icon("building", "sm") + esc(j.dept) + '</span><span>' + icon("pin", "sm") + esc(j.loc) + '</span><span>' + icon("clock", "sm") + esc(j.type) + '</span></div>' +
+      '<div class="rm-facts"><div><small>Salary</small><b>' + esc(j.salary) + '</b></div><div><small>Experience</small><b>' + esc(j.exp) + '</b></div><div><small>Positions</small><b>' + left + ' open</b></div><div><small>Apply by</small><b>' + fmtDate(j.end) + '</b></div></div>' +
+      '<h4>About the role</h4><p>' + esc(j.desc) + '</p><h4>Skills we look for</h4><div class="tags">' + j.skills.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join("") + '</div></div>',
+      foot: '<button class="btn" data-close>Close</button><button class="btn primary" id="go">Apply now</button>' });
+    m.querySelector("#go").addEventListener("click", function () { m.remove(); formModal("Apply for " + j.title, j); });
+  }
+
+  function setDept(d) { state.d = d; drawTabs(); draw(); document.getElementById("roles").scrollIntoView({ behavior: "smooth" }); }
+  document.getElementById("tabs").addEventListener("click", function (e) { var b = e.target.closest("[data-d]"); if (b) { state.d = b.dataset.d; drawTabs(); draw(); } });
+  document.getElementById("quick").addEventListener("click", function (e) { var b = e.target.closest("[data-d]"); if (b) { setDept(b.dataset.d); } });
+  document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value.toLowerCase(); draw(); });
+  document.getElementById("q").addEventListener("keydown", function (e) { if (e.key === "Enter") { document.getElementById("roles").scrollIntoView({ behavior: "smooth" }); } });
+  document.getElementById("findBtn").addEventListener("click", function () { document.getElementById("roles").scrollIntoView({ behavior: "smooth" }); });
+  document.getElementById("out").addEventListener("click", function (e) { var c = e.target.closest(".job"); if (c) { detail(DEMO.job(+c.dataset.id)); } });
+  drawTabs(); draw();
+})();
+</script>
+</body>
+</html>

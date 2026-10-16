@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Applications</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  .conf { display: flex; align-items: center; gap: 0.5rem; min-width: 6.875rem; }
+  .conf .bar { flex: 1; }
+</style>
+</head>
+<body data-module="recruitment" data-page="email-apps" data-title="Email Applications">
+<main id="page">
+  <div data-actions>
+    <button class="btn" id="sync"><span data-i="inbox"></span>Check mailbox now</button>
+    <a class="btn" href="intake-mailbox.html">Mailbox settings</a>
+  </div>
+
+  <div class="grid g4" id="kpis" style="margin-bottom:var(--gap)"></div>
+  <div class="toolbar"><div class="filters" id="filters"></div></div>
+  <div class="card flush"><div class="table-wrap"><table class="tbl" id="tbl"></table></div></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  var L = DEMO.intake, state = "All";
+  var tone = { "Candidate created": "good", "Needs review": "warn", "Already exists": "info", "Ignored": "", "Failed": "bad" };
+  var count = function (r) { return L.filter(function (x) { return x.result === r; }).length; };
+  document.getElementById("kpis").innerHTML = [["Emails read", L.length, "inbox"], ["Candidates created", count("Candidate created"), "userplus"], ["Need review", count("Needs review"), "flag"], ["Failed", count("Failed"), "x"]].map(function (k) {
+    return '<div class="card kpi"><div class="lbl"><span class="ico">' + icon(k[2]) + '</span>' + k[0] + '</div><div class="num">' + k[1] + '</div></div>';
+  }).join("");
+
+  var tabs = ["All", "Candidate created", "Needs review", "Already exists", "Ignored", "Failed"];
+  function filters() { document.getElementById("filters").innerHTML = tabs.map(function (t) { var n = t === "All" ? L.length : count(t); return '<button class="fchip' + (state === t ? " on" : "") + '" data-s="' + t + '">' + t + ' <span class="n">' + n + '</span></button>'; }).join(""); }
+  function draw() {
+    var list = L.filter(function (x) { return state === "All" || x.result === state; });
+    document.getElementById("tbl").innerHTML = '<thead><tr><th>Received</th><th>From</th><th>Subject</th><th>Matched opening</th><th>Confidence</th><th>Result</th><th></th></tr></thead><tbody>' +
+      list.map(function (x) {
+        var c = x.conf >= 80 ? "good" : x.conf >= 50 ? "" : "";
+        return '<tr><td class="mono" style="font-size:var(--fs-xs)">' + x.at + '</td><td>' + x.from + '</td><td><b>' + x.subject + '</b>' + (x.files ? '<div class="faint" style="font-size:var(--fs-xs)">' + icon("file", "sm") + " " + x.files + ' attachment' + (x.files > 1 ? "s" : "") + '</div>' : "") + '</td><td>' + x.job + '</td><td><div class="conf"><div class="bar ' + c + '"><i style="width:' + x.conf + '%;' + (x.conf < 50 ? "background:var(--bad)" : x.conf < 80 ? "background:var(--warn)" : "") + '"></i></div><span class="mono" style="font-size:var(--fs-xs)">' + x.conf + '%</span></div></td><td>' + chip(x.result, tone[x.result], true) + '</td><td class="act">' + (x.result === "Needs review" ? '<button class="btn sm primary">Review</button>' : x.result === "Candidate created" ? '<a class="btn sm" href="candidates.html">View candidate</a>' : '<button class="btn sm icon ghost" aria-label="More">' + icon("more", "sm") + '</button>') + '</td></tr>';
+      }).join("") + '</tbody>';
+  }
+  document.getElementById("filters").addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (b) { state = b.dataset.s; filters(); draw(); } });
+  document.getElementById("sync").addEventListener("click", function () { toast("Mailbox checked: nothing new (demo)"); });
+  filters(); draw();
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ariel HR Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  .hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+  .hero .card { background: linear-gradient(135deg, #101828, #26324a); color: #fff; border: 0; padding: 1.75rem; }
+  .hero h2 { font-size: 1.6rem; margin-bottom: 0.5rem; }
+  .hero p { color: #e6f4fd; max-width: 52ch; }
+  .page-link { display: flex; gap: 0.875rem; align-items: flex-start; text-decoration: none; color: var(--ink); }
+  .page-link:hover { text-decoration: none; border-color: var(--brand); }
+  .page-link .ico { width: 2.5rem; height: 2.5rem; border-radius: 0.6875rem; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex: none; }
+  .page-link h3 { font-size: var(--fs-md); margin-bottom: 2px; }
+  .page-link p { color: var(--ink-2); font-size: var(--fs-sm); }
+  .files li { padding: 0.4375rem 0; border-bottom: 1px solid var(--line); display: flex; gap: 0.625rem; font-size: var(--fs-sm); }
+  .files li:last-child { border: 0; }
+  .files code { font-family: var(--font-mono); color: var(--brand); flex: none; min-width: 9.375rem; }
+  @media (max-width: 720px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body data-module="dashboard" data-title="Redesign preview">
+<main id="page">
+  <div class="hero">
+    <div class="card">
+      <h2>Menu, header and Recruitment, redesigned</h2>
+      <p>Every module and submenu of the current app is still here. The sidebar is now a slim module rail plus a submenu panel, the top bar gathers company, search, check-in, create, notifications and profile, and all eleven Recruitment pages have a new layout.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>How to edit this project</h3></div>
+      <ul class="files">
+        <li><code>css/tokens.css</code><span>Colours, fonts, radii. Change the look from here.</span></li>
+        <li><code>js/data.js</code><span>The full menu and every demo record.</span></li>
+        <li><code>js/shell.js</code><span>Rail, panel and top bar.</span></li>
+        <li><code>*.html</code><span>One file per page, content and its small script.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card-head"><h3>Recruitment pages</h3></div>
+  <div class="grid g3" id="links"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  var blurbs = {
+    "recruitment-dashboard.html": "KPIs, hiring funnel, applications over time, today's interviews, AI effectiveness.",
+    "job-openings.html": "All recruitments as cards or a table, with vacancy progress and managers.",
+    "open-jobs.html": "The public careers view that candidates see, with search and apply.",
+    "candidates.html": "List or card view with stage, rating, AI score, filters and bulk actions.",
+    "interviews.html": "Today and upcoming schedule, with a full table of every round.",
+    "pipeline.html": "Drag-and-drop board per job, stage by stage.",
+    "survey.html": "Question templates and the questions inside each.",
+    "stages.html": "Stage setup per recruitment with type, managers and order.",
+    "skill-zone.html": "Talent pools, so good candidates are never lost.",
+    "email-applications.html": "Applications read from the mailbox and what happened to each.",
+    "intake-mailbox.html": "Mailbox connection and the rules for turning mail into candidates."
+  };
+  var m = MODULES.filter(function (x) { return x.id === "recruitment"; })[0], html = "";
+  m.items.forEach(function (i) {
+    html += '<a class="card page-link" href="' + i.href + '"><span class="ico">' + icon("briefcase") + '</span><div><h3>' + i.label + '</h3><p>' + (blurbs[i.href] || "") + '</p></div></a>';
+  });
+  html += '<a class="card page-link" href="candidate-profile.html?id=1"><span class="ico">' + icon("users") + '</span><div><h3>Candidate profile</h3><p>Header, stage tracker and eleven tabs: About, AI Insights, Resume, Survey, Documents, History, Rating, Onboarding, Mail Log, Interviews, Skill Zone.</p></div></a>';
+  document.getElementById("links").innerHTML = html;
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

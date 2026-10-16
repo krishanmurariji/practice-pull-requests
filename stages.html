@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stages</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  .stage-row { display: grid; grid-template-columns: 1.5rem 2.25rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 0.875rem; align-items: center; padding: 0.6875rem 0.875rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--surface); margin-bottom: 0.5rem; }
+  .stage-row .grip { color: var(--ink-3); cursor: grab; }
+  .stage-row .seq { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: var(--surface-2); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-xs); }
+  @media (max-width: 688px) { .stage-row { grid-template-columns: 1.75rem minmax(0, 1fr) auto; } .stage-row .hide-s { display: none; } }
+</style>
+</head>
+<body data-module="recruitment" data-page="stages" data-title="Stages">
+<main id="page">
+  <div data-actions><button class="btn primary" id="new"><span data-i="plus"></span>Add stage</button></div>
+  <div class="tabs" id="jobs"></div>
+  <div class="card"><div class="card-head"><h3 id="ttl"></h3><div class="right"><span class="muted">Drag the handle to reorder</span></div></div><div id="rows"></div></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  var sel = DEMO.stageSetup[0].job, tones = { applied: "", initial: "info", test: "violet", interview: "warn", offer: "teal", hired: "good", cancelled: "bad" };
+  function tabs() { document.getElementById("jobs").innerHTML = DEMO.stageSetup.map(function (s) { return '<button class="tab' + (s.job === sel ? " on" : "") + '" data-j="' + s.job + '">' + DEMO.job(s.job).title + ' <span class="n">' + s.stages.length + '</span></button>'; }).join(""); }
+  function rows() {
+    var s = DEMO.stageSetup.filter(function (x) { return x.job === sel; })[0];
+    document.getElementById("ttl").textContent = DEMO.job(sel).title;
+    document.getElementById("rows").innerHTML = s.stages.map(function (st, i) {
+      var mg = st[2].split(", ");
+      return '<div class="stage-row"><span class="grip">' + icon("menu", "sm") + '</span><span class="seq">' + (i + 1) + '</span><b>' + st[0] + '</b><span class="hide-s">' + chip(DEMO.stage(st[1]).label + " type", tones[st[1]], true) + '</span><span class="hide-s row">' + avatarStack(mg) + '<span class="muted" style="font-size:var(--fs-xs)">' + st[2] + '</span></span><span class="row"><button class="btn sm icon ghost" aria-label="Edit">' + icon("edit", "sm") + '</button><button class="btn sm icon ghost" aria-label="Delete">' + icon("trash", "sm") + '</button></span></div>';
+    }).join("");
+  }
+  document.getElementById("jobs").addEventListener("click", function (e) { var b = e.target.closest("[data-j]"); if (b) { sel = +b.dataset.j; tabs(); rows(); } });
+  document.getElementById("new").addEventListener("click", function () {
+    openModal({ title: "Add stage", body: '<div class="form-grid"><div class="full"><label class="lbl">Stage name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Stage type</label><select class="select">' + DEMO.stages.map(function (s) { return "<option>" + s.label + "</option>"; }).join("") + '</select></div><div><label class="lbl">Position in order</label><input class="input" type="number" value="4"></div><div class="full"><label class="lbl">Stage managers</label><select class="select" multiple style="height:6rem">' + DEMO.team.map(function (t) { return "<option>" + t + "</option>"; }).join("") + '</select></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Save stage</button>' });
+  });
+  tabs(); rows();
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

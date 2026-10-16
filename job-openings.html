@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Openings</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  /* card: title, designation, top three skills, end date and round faces of the interviewers */
+  .jobs .grid.g3 { grid-template-columns: repeat(auto-fill, minmax(19.5rem, 1fr)); gap: 1rem; }
+  .jobs .job-card { --dc: var(--brand); padding: 1rem 1.125rem 0.875rem; gap: 0.75rem; cursor: pointer; position: relative; overflow: hidden;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+  .jobs .job-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 0.1875rem; background: var(--dc); opacity: 0; transition: opacity 0.18s; }
+  .jobs .job-card:hover { transform: translateY(-0.1875rem); border-color: color-mix(in srgb, var(--dc) 45%, var(--line)); box-shadow: 0 0.625rem 1.5rem color-mix(in srgb, var(--dc) 14%, transparent); }
+  .jobs .job-card:hover::before { opacity: 1; }
+  .jobs .job-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(0.625rem); } to { opacity: 1; transform: none; } }
+  .job-card .top { display: flex; align-items: center; gap: 0.625rem; }
+  .job-card h3 { font-size: 0.95rem; line-height: 1.3; min-width: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-card .desig { margin-top: -0.4rem; font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* the LinkedIn mark: shown only when the opening is also posted on LinkedIn */
+  .li { width: 1.125rem; height: 1.125rem; flex: none; display: block; }
+  .job-card .li { margin-right: 0.125rem; }
+  .job-card.closed h3 { color: var(--ink-2); }
+  .tbl .t-li { display: inline-block; vertical-align: -0.2rem; margin-left: 0.4rem; }
+  .job-card .more { margin: 0 -0.5rem 0 -2px; opacity: 0.5; }
+  .job-card:hover .more, .job-card .more:focus-visible, .job-card .more.open { opacity: 1; }
+  .job-card .tags { min-height: 1.5rem; flex-wrap: nowrap; overflow: hidden; }
+  .job-card .tag { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+  .job-card .tag.rest { flex: none; }
+  .job-card .tag.rest { background: transparent; color: var(--ink-3); padding-left: 0.125rem; }
+  /* vacancies: filled on the left, progress bar, total on the right */
+  .job-card .vac { display: flex; align-items: center; gap: 0.625rem; font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .job-card .vac b { color: var(--ink); font-weight: 650; font-size: var(--fs-sm); }
+  .job-card .vac .bar { flex: 1 1 auto; height: 0.4375rem; }
+  .job-card .vac .l, .job-card .vac .r { white-space: nowrap; }
+  .job-card .foot { display: flex; align-items: center; justify-content: space-between; gap: 0.625rem; }
+  .job-card .when { display: inline-flex; align-items: center; gap: 0.3125rem; color: var(--ink-2); font-size: var(--fs-xs); }
+  .job-card .when.soon { color: var(--warn); font-weight: 600; }
+  .job-card .when svg.i { width: 0.8125rem; height: 0.8125rem; }
+  .faces { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.7rem; color: var(--ink-3); flex: none; }
+  .faces .av-stack .av { border-color: var(--surface); }
+  .job-ghost { min-height: 8rem; border: 1.5px dashed var(--line); border-radius: var(--radius-lg); background: transparent; color: var(--ink-3); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; transition: border-color 0.18s, color 0.18s, background 0.18s; animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+  .job-ghost:hover { border-color: var(--ink-3); color: var(--ink); background: var(--surface); }
+  .job-ghost svg.i { width: 1.375rem; height: 1.375rem; }
+  .jobs .chip { font-size: 0.64rem; height: 1.1875rem; padding: 0 0.5rem; }
+  /* list view stays compact */
+  .jobs .tbl { font-size: 0.78rem; }
+  .jobs .tbl th { font-size: 0.64rem; padding: 0.5rem 0.875rem; }
+  .jobs .tbl td { padding: 0.5625rem 0.875rem; }
+  .jobs .tbl tbody tr { cursor: pointer; }
+  .jobs .tbl .faint { font-size: 0.68rem; }
+  .jobs .tbl .tag { white-space: nowrap; }
+  .jobs .tbl .tags { flex-wrap: nowrap; }
+  .jobs .table-foot { font-size: 0.74rem; padding: 0.5625rem 0.875rem; }
+  /* details drawer */
+  .detail-top { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1rem; }
+  .detail-top .dept { color: var(--ink-2); }
+  .detail .dl { grid-template-columns: 7.5rem minmax(0, 1fr); font-size: var(--fs-sm); }
+  .detail h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 1.375rem 0 0.5rem; font-weight: 600; }
+  .detail p { color: var(--ink-2); line-height: 1.65; font-size: var(--fs-sm); }
+
+  /* interviewer avatars: round, overlapping, lift on hover, name tag on top (same as the pipeline details card) */
+  .faces { display: inline-flex; align-items: center; flex: none; }
+  .pstack { display: inline-flex; align-items: center; padding-left: 0.5rem; }
+  .pav { --s: 1.9375rem; position: relative; margin-left: -0.5rem; width: var(--s); height: var(--s); box-sizing: content-box; border: 2px solid var(--surface); border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; cursor: default; transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s; }
+  .pav svg, .pav img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
+  .pav.more { background: var(--surface-2) !important; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 700; }
+  .pav:hover, .pav:focus-visible { transform: translateY(-0.3125rem) scale(1.1); z-index: 5; box-shadow: 0 0.375rem 0.75rem color-mix(in srgb, var(--ink) 22%, transparent); outline: none; }
+  .pav[data-tip]::after { content: attr(data-tip); position: absolute; right: -0.25rem; bottom: calc(100% + 0.5rem); transform: translateY(0.25rem); background: var(--ink); color: var(--bg); font-size: var(--fs-xs); font-weight: 500; line-height: 1.3; padding: 0.3125rem 0.5625rem; border-radius: 0.4375rem; white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.15s, transform 0.15s, visibility 0s linear 0.15s; z-index: 30; letter-spacing: 0; }
+  .pav[data-tip]:hover::after, .pav[data-tip]:focus-visible::after { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .pav.more[data-tip]::after { white-space: normal; width: max-content; max-width: 14rem; }
+  .job-card .foot { min-height: 2.25rem; }
+  /* the three-dot menu: icon and label, as wide as its longest label */
+  .pop.compact { min-width: 0; width: max-content; padding: 0.25rem; border-radius: 0.75rem; }
+  .pop.compact .item { gap: 0.5rem; padding: 0.4375rem 0.75rem 0.4375rem 0.625rem; font-size: var(--fs-sm); white-space: nowrap; }
+  .pop.compact .item svg.i { color: var(--ink-3); }
+  .pop.compact .item.danger svg.i { color: var(--bad); }
+  .pop.compact .sep { margin: 0.25rem 0.125rem; }
+
+  /* ---- XL create / edit modal: live preview on the left, sectioned form on the right ---- */
+  .modal.xl { width: min(88rem, 96vw); max-height: 94vh; display: flex; flex-direction: column; }
+  .modal.xl .modal-body { padding: 0; overflow: hidden; }
+  .xwrap { height: min(46rem, 80vh); display: flex; }
+  .xside { display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem; background: linear-gradient(180deg, var(--brand-soft), var(--surface-2)); border-right: 1px solid var(--line); overflow: auto; }
+  .xmain, .xside, .modal.xl, .ms-list { scrollbar-width: none; -ms-overflow-style: none; }
+  .xmain::-webkit-scrollbar, .xside::-webkit-scrollbar, .modal.xl::-webkit-scrollbar, .ms-list::-webkit-scrollbar { display: none; }
+  .xright { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .xmain { flex: 1; overflow: auto; padding: 1.5rem 2rem 2rem; display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 2rem; align-items: start; }
+  .xcol { display: flex; flex-direction: column; gap: 1.25rem; padding-left: 2rem; border-left: 1px solid var(--line); }
+  @media (max-width: 960px) { .xmain { grid-template-columns: minmax(0, 1fr); } .xcol { padding-left: 0; border-left: 0; } }
+  .xtabs { display: flex; gap: 0.25rem; padding: 0 1.5rem; border-bottom: 1px solid var(--line); }
+  .xtabs button { display: flex; align-items: center; gap: 0.5rem; padding: 0.9375rem 1rem; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--ink-3); font: inherit; font-weight: 600; cursor: pointer; }
+  .xtabs button svg { width: 1rem; height: 1rem; } .xtabs button:hover { color: var(--ink); }
+  .xtabs button.on { color: var(--brand); border-bottom-color: var(--brand); }
+  .xsec + .xsec { margin-top: 1.25rem; }
+  @media (max-width: 860px) { .xwrap { grid-template-columns: minmax(0, 1fr); } .xside { display: none; } .xtabs { overflow-x: auto; } }
+  .xprev { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 1rem; box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--brand) 14%, transparent); }
+  .xprev.closed { opacity: 0.8; }
+  .xprev .xflag { position: absolute; top: -0.5rem; left: 50%; transform: translateX(-50%); background: var(--bad); color: #fff; font-size: var(--fs-xs); font-weight: 700; padding: 0.125rem 0.75rem; border-radius: 0 0 0.5rem 0.5rem; }
+  .xprev .ph { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .xprev .pt { font-weight: 650; font-size: var(--fs-lg); overflow-wrap: anywhere; } .xprev .pt i { color: var(--ink-3); font-weight: 500; }
+  .xprev .li { width: 1.125rem; height: 1.125rem; flex: none; }
+  .xprev .pp { color: var(--ink-3); margin: 0.125rem 0 0.625rem; }
+  .xprev .ptags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .xprev .pbar { display: flex; align-items: center; gap: 0.5rem; margin: 0.875rem 0 0.625rem; font-size: var(--fs-sm); }
+  .xprev .trk2 { flex: 1; height: 0.375rem; border-radius: 99px; background: var(--surface-2); overflow: hidden; } .xprev .trk2 i { display: block; height: 100%; background: var(--brand); }
+  .xprev .pfoot { display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-sm); min-height: 1.75rem; }
+  .xprev .pstack { display: inline-flex; } .xprev .pav { width: 1.75rem; height: 1.75rem; border-radius: 50%; border: 2px solid var(--surface); margin-left: -0.5rem; overflow: hidden; display: block; }
+  .xprev .pav svg, .xprev .pav img { width: 100%; height: 100%; display: block; }
+  .xprog { display: flex; align-items: center; gap: 0.75rem; }
+  .xprog b { display: block; } .xprog small { color: var(--ink-3); font-size: var(--fs-xs); }
+  .xring { --p: 0; width: 2.75rem; height: 2.75rem; border-radius: 50%; display: grid; place-items: center; font-size: var(--fs-sm); font-weight: 700; flex: none; background: radial-gradient(closest-side, var(--surface) 76%, transparent 78%), conic-gradient(var(--brand) calc(var(--p) * 1%), var(--line) 0); }
+  .xring.ok { color: var(--good); background: radial-gradient(closest-side, var(--surface) 76%, transparent 78%), conic-gradient(var(--good) 100%, var(--line) 0); }
+  .xnav { display: none; }
+  .xpub { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
+  .xpub .tile { padding: 0.5625rem 0.75rem; background: var(--surface); }
+  .xpub .tile:has(input:checked) { background: var(--brand-soft); }
+  .xpub .ttx small { display: none; }
+  .xnav button { display: flex; align-items: center; gap: 0.625rem; border: 0; background: none; padding: 0.5rem 0.625rem; border-radius: 0.625rem; color: var(--ink-2); cursor: pointer; text-align: left; font: inherit; }
+  .xnav button svg { width: 1rem; height: 1rem; }
+  .xnav button:hover { background: color-mix(in srgb, var(--brand) 8%, transparent); }
+  .xnav button.on { background: var(--surface); color: var(--brand); font-weight: 600; box-shadow: 0 0.0625rem 0.25rem color-mix(in srgb, #000 10%, transparent); }
+  .xsec > header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .xsec h4 { font-size: var(--fs-lg); font-weight: 650; } .xsec header p { color: var(--ink-3); font-size: var(--fs-sm); }
+  .sico { width: 2.25rem; height: 2.25rem; border-radius: 0.75rem; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); } .sico svg { width: 1.125rem; height: 1.125rem; }
+  .xgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+  .xgrid .span3 { grid-column: 1 / -1; }
+  .xgrid .span3.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+  @media (max-width: 760px) { .xgrid { grid-template-columns: minmax(0, 1fr); } .xgrid .span3.pair { grid-template-columns: minmax(0, 1fr); } }
+  .xgrid .textarea { height: auto; padding: 0.625rem 0.75rem; resize: vertical; }
+  .input.big { height: 3rem; font-size: var(--fs-lg); font-weight: 600; }
+  .lblrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3125rem; }
+  .lblrow .lbl { margin-bottom: 0; }
+  .ms .lbl { display: flex; align-items: center; justify-content: space-between; }
+  .btn.sm { height: 1.875rem; padding: 0 0.625rem; font-size: var(--fs-sm); gap: 0.375rem; }
+  .btn.sm svg { width: 0.875rem; height: 0.875rem; }
+  .btn.ai { background: linear-gradient(135deg, var(--brand-soft), color-mix(in srgb, #8b5cf6 16%, var(--surface))); border-color: transparent; color: var(--brand); font-weight: 600; }
+  .stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 0.625rem; overflow: hidden; background: var(--surface); }
+  .stepper button { width: 2.5rem; height: 2.5rem; border: 0; background: var(--surface-2); cursor: pointer; font-size: 1.125rem; color: var(--ink-2); } .stepper button:hover { background: var(--brand-soft); color: var(--brand); }
+  .stepper .input { border: 0; border-radius: 0; text-align: center; font-weight: 650; -moz-appearance: textfield; } .stepper .input::-webkit-inner-spin-button { display: none; }
+  .ms { position: relative; }
+  .ms-box { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; min-height: 2.5rem; padding: 0.25rem 0.5rem; border: 1px solid var(--line); border-radius: 0.625rem; background: var(--surface); cursor: text; }
+  .ms-box:focus-within { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+  .ms-chips { display: contents; }
+  .ms-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.25rem 0.125rem 0.5rem; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: var(--fs-sm); }
+  .ms-chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
+  .ms-q { flex: 1; min-width: 6rem; border: 0; outline: 0; background: transparent; height: 1.75rem; color: inherit; }
+  .ms-list { position: absolute; left: 0; right: 0; top: 100%; margin-top: 0.25rem; z-index: 5; max-height: 14rem; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 0.625rem; box-shadow: var(--shadow-lg); padding: 0.25rem; }
+  .ms-opt { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.5rem; border-radius: 0.5rem; cursor: pointer; }
+  .ms-opt:hover { background: var(--surface-2); }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  @media (max-width: 760px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+  .tile { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.875rem; border: 1px solid var(--line); border-radius: 0.875rem; cursor: pointer; transition: border-color .15s, background .15s; }
+  .tile:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); }
+  .tile:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+  .tico { width: 2.125rem; height: 2.125rem; border-radius: 0.625rem; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-3); flex: none; } .tico svg { width: 1.0625rem; height: 1.0625rem; }
+  .tile:has(input:checked) .tico { background: var(--brand); color: #fff; }
+  .ttx { flex: 1; min-width: 0; } .ttx b { display: block; font-weight: 600; } .ttx small { display: block; color: var(--ink-3); font-size: var(--fs-xs); }
+  #liWrap { transition: opacity .15s; } #liWrap.off { opacity: 0.45; }
+</style>
+</head>
+<body data-module="recruitment" data-page="job-openings" data-title="Job Openings" data-sub="" data-ruled="1">
+<main id="page">
+  <!-- heading row, right side: search, filter, view, export, new. Each is an icon that widens on hover. -->
+  <div data-actions>
+    <label class="xsearch" id="xs"><span data-i="search"></span><input id="q" type="search" placeholder="Search openings" aria-label="Search openings"></label>
+    <button class="xbtn" id="filterBtn" aria-label="Filter openings"><span data-i="filter"></span><span class="xl" id="filterLbl">All jobs</span></button>
+    <button class="xbtn" id="viewBtn" aria-label="Switch view"><span id="viewIco"></span><span class="xl" id="viewLbl">Table view</span></button>
+    <button class="xbtn" id="exportBtn" aria-label="Export"><span data-i="download"></span><span class="xl">Export</span></button>
+    <button class="xbtn" id="create" aria-label="New opening"><span data-i="plus"></span><span class="xl">New opening</span></button>
+  </div>
+
+  <div id="out" class="jobs"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  var state = { f: "open", q: "", v: "cards" };
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+
+  var FILTERS = [["open", "Open jobs"], ["closed", "Closed jobs"], ["all", "All jobs"], ["archived", "Archived"]];
+  function liveJobs() { return DEMO.jobs.filter(function (j) { return !j.archived; }); }
+  var DEPTS = ["Development", "Designing", "Human Resource", "Accounts", "Business Development"];
+  function counts() { var l = liveJobs(); return { all: l.length, open: l.filter(function (j) { return j.status === "open"; }).length, closed: l.filter(function (j) { return j.status === "closed"; }).length, archived: DEMO.jobs.length - l.length }; }
+  function rows() {
+    return DEMO.jobs.filter(function (j) {
+      var hay = (j.title + " " + j.dept + " " + j.skills.join(" ")).toLowerCase();
+      var inView = state.f === "archived" ? !!j.archived : (!j.archived && (state.f === "all" || j.status === state.f));
+      return inView && (!state.q || hay.indexOf(state.q) >= 0);
+    });
+  }
+  var DEPT_COLOR = { "Development": "#2563eb", "Designing": "#7c4dff", "Human Resource": "#0d9488", "Accounts": "#ea7a1a", "Business Development": "#d6457a" };
+  function deptColor(d) { return DEPT_COLOR[d] || "var(--brand)"; }
+  function daysLeft(j) { return Math.round((new Date(j.end) - new Date(DEMO.today)) / 86400000); }
+  function whenText(j) {
+    if (j.status === "closed") { return { t: "Closed " + shortDate(j.end), soon: false }; }
+    var n = daysLeft(j);
+    if (n < 0) { return { t: "Past its closing date", soon: true }; }
+    if (n === 0) { return { t: "Closes today", soon: true }; }
+    return { t: "Closes in " + n + " day" + (n === 1 ? "" : "s"), soon: n <= 14 };
+  }
+  /* interviewers: everyone who sits on an interview for this opening (falls back to its managers) */
+  /* LinkedIn "in" mark (brand blue) */
+  function liIcon(cls) {
+    return '<svg class="li ' + (cls || "") + '" viewBox="0 0 24 24" role="img" aria-label="Also posted on LinkedIn"><title>Also posted on LinkedIn</title><path fill="#0a66c2" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>';
+  }
+  function interviewers(j) {
+    var ids = DEMO.candidates.filter(function (c) { return c.job === j.id; }).map(function (c) { return c.id; }), seen = {}, out = [];
+    DEMO.interviews.forEach(function (i) { if (ids.indexOf(i.cand) >= 0) { i.who.forEach(function (n) { if (!seen[n]) { seen[n] = 1; out.push(n); } }); } });
+    return out.length ? out : j.managers.slice();
+  }
+  /* round, overlapping avatars (first five, then +n). Cards get a name tooltip; the table uses the browser's own. */
+  function faces(j, max, native) {
+    var n = interviewers(j), shown = n.slice(0, max || 5), rest = n.slice(max || 5);
+    var one = function (name) { var f = avatarFace(name); return '<span class="pav" tabindex="0" ' + (native ? 'title="' + name + '"' : 'data-tip="' + name + '"') + ' style="background:' + f.bg + '">' + f.html + "</span>"; };
+    return '<span class="faces" aria-label="Interviewers: ' + n.join(", ") + '"><span class="pstack">' + shown.map(one).join("") + (rest.length ? '<span class="pav more" tabindex="0" ' + (native ? 'title="' + rest.join(", ") + '"' : 'data-tip="' + rest.join(", ") + '"') + ">+" + rest.length + "</span>" : "") + "</span></span>";
+  }
+  function skillTags(j, max) {
+    return j.skills.slice(0, max).map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + (j.skills.length > max ? '<span class="tag rest">+' + (j.skills.length - max) + '</span>' : "");
+  }
+  function endInfo(j) {
+    var n = daysLeft(j);
+    return { t: (j.status === "closed" ? "Closed " : "Ends ") + shortDate(j.end), soon: j.status === "open" && n <= 14 };
+  }
+  function cardHtml(j, i) {
+    var w = endInfo(j);
+    return '<article class="card job-card' + (j.status === "closed" ? " closed" : "") + '" data-id="' + j.id + '" tabindex="0" style="--i:' + i + '" aria-label="' + j.title + ', open pipeline">' +
+      '<div class="top"><h3 title="' + j.title + '">' + j.title + '</h3>' +
+        (j.linkedin ? liIcon() : "") + moreBtn(j) + '</div>' +
+      '<div class="desig">' + j.dept + ' · ' + j.exp + '</div>' +
+      '<div class="tags">' + skillTags(j, 3) + '</div>' +
+      '<div class="vac" title="' + j.filled + ' of ' + j.openings + ' vacancies filled"><span class="l"><b>' + j.filled + '</b> filled</span><div class="bar' + (j.filled >= j.openings ? " good" : "") + '"><i style="width:' + Math.min(100, j.filled / j.openings * 100) + '%"></i></div><span class="r"><b>' + j.openings + '</b> vacancies</span></div>' +
+      '<div class="foot"><span class="when' + (w.soon ? " soon" : "") + '">' + icon("clock") + w.t + '</span>' + faces(j, 5) + '</div></article>';
+  }
+  function applicants(j) { return DEMO.candidates.filter(function (c) { return c.job === j.id; }).length; }
+  function statusChip(j) { return j.status === "open" ? chip("Open", "good", true) : chip("Closed", "", true); }
+  function jobById(id) { return DEMO.jobs.filter(function (j) { return j.id === +id; })[0]; }
+  function moreBtn(j) { return '<button class="icon-btn more" data-menu="' + j.id + '" aria-label="Options for ' + j.title + '" aria-haspopup="menu">' + icon("dotsv") + '</button>'; }
+
+  /* the buttons reflect the current state: the view button always offers the OTHER view */
+  function syncSummary() {
+    var c = counts(), vac = liveJobs().reduce(function (a, j) { return a + j.openings; }, 0), filled = liveJobs().reduce(function (a, j) { return a + j.filled; }, 0), el = document.getElementById("head-sub");
+    if (el) { el.textContent = c.open + " open · " + c.closed + " closed · " + filled + " of " + vac + " vacancies filled"; }
+  }
+  function syncButtons() {
+    syncSummary();
+    var c = counts(), name = FILTERS.filter(function (f) { return f[0] === state.f; })[0][1];
+    document.getElementById("filterLbl").innerHTML = name + ' <span class="n">' + c[state.f] + '</span>';
+    document.getElementById("viewIco").innerHTML = icon(state.v === "cards" ? "list" : "grid");
+    document.getElementById("viewLbl").textContent = state.v === "cards" ? "Table view" : "Card view";
+    document.getElementById("viewBtn").setAttribute("aria-label", "Switch to " + document.getElementById("viewLbl").textContent.toLowerCase());
+    fitX(document.getElementById("head-actions"));
+  }
+
+  function draw() {
+    var list = rows(), out = document.getElementById("out");
+    if (!list.length) { out.innerHTML = '<div class="card empty">No openings match. Try clearing the search.</div>'; return; }
+    if (state.v === "cards") {
+      out.innerHTML = '<div class="grid g3">' + list.map(function (j, i) { return cardHtml(j, i); }).join("") +
+        '<button class="job-ghost" data-new="1" style="--i:' + list.length + '" aria-label="New opening">' + icon("plus") + 'New opening</button></div>';
+    } else {
+      out.innerHTML = '<div class="card flush"><div class="table-wrap"><table class="tbl"><thead><tr><th>Opening</th><th>Skills</th><th>Interviewers</th><th>Ends</th><th>Status</th><th></th></tr></thead><tbody>' +
+        list.map(function (j) {
+          var w = endInfo(j);
+          return '<tr data-id="' + j.id + '"><td><b>' + j.title + '</b>' + (j.linkedin ? liIcon("t-li") : "") + '<div class="faint">' + j.dept + ' \u00b7 ' + j.exp + '</div></td><td><div class="tags">' + skillTags(j, 3) + '</div></td><td>' + faces(j, 5, true) + '</td><td' + (w.soon ? ' style="color:var(--warn);font-weight:600"' : "") + '>' + shortDate(j.end) + '</td><td>' + statusChip(j) + '</td><td class="act">' + moreBtn(j) + '</td></tr>';
+        }).join("") + '</tbody></table></div><div class="table-foot">Showing ' + list.length + ' of ' + DEMO.jobs.length + '<div class="pager"><button class="on">1</button></div></div></div>';
+    }
+  }
+  function refresh() { syncButtons(); draw(); }
+
+  /* ---- small popover menu (filter and per-card options) ---- */
+  var menu = null, menuAnchor = null;
+  function closeMenu() { if (menu) { menu.remove(); menu = null; } if (menuAnchor) { menuAnchor.classList.remove("open"); menuAnchor = null; } }
+  function openMenu(anchor, html, onPick, width, cls) {
+    closeMenu();
+    var r = anchor.getBoundingClientRect();
+    menu = document.createElement("div"); menu.className = "pop" + (cls ? " " + cls : ""); menu.setAttribute("role", "menu"); menu.innerHTML = html;
+    document.body.appendChild(menu);
+    if (width) { menu.style.minWidth = (width / 16) + "rem"; }
+    var mw = menu.offsetWidth;
+    menu.style.top = (r.bottom + 6) + "px"; menu.style.left = Math.max(12, Math.min(window.innerWidth - mw - 12, r.right - mw)) + "px";
+    anchor.classList.add("open"); menuAnchor = anchor;
+    menu.addEventListener("click", function (e) { var it = e.target.closest("[data-pick]"); if (it) { var v = it.dataset.pick; closeMenu(); onPick(v); } });
+  }
+  document.addEventListener("click", function (e) { if (menu && !e.target.closest(".pop") && e.target !== menuAnchor && !(menuAnchor && menuAnchor.contains(e.target))) { closeMenu(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeMenu(); } });
+
+  /* ---- the form, shared by New and Edit ---- */
+  /* ---- Create / Edit: one extra-large modal with every field of the real Add Recruitment form ---- */
+  var POSITIONS = ["Python Developer", "Django Developer", "UI/UX Designer", "QA Engineer", "HR Executive", "Accounts Executive"];
+  var COMPANIES = ["Ariel Software Solutions Pvt Ltd"];
+  var LI_ACCOUNTS = ["Ariel Software Solutions (company page)", "Sonali Thakur (personal)", "Krishan Murari (personal)"];
+  var SKILLS = (function () {
+    var seen = {}, out = [];
+    DEMO.jobs.forEach(function (j) { (j.skills || []).forEach(function (x) { if (!seen[x]) { seen[x] = 1; out.push(x); } }); });
+    ["Python", "Django", "REST APIs", "PostgreSQL", "Docker", "AWS", "Git", "JavaScript", "React", "Figma", "Selenium", "Tally", "GST", "Communication", "Recruitment"].forEach(function (x) { if (!seen[x]) { seen[x] = 1; out.push(x); } });
+    return out.sort();
+  })();
+  var esc = function (t) { return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); };
+  function msField(key, label, list, sel, ph) {
+    return '<div class="ms" data-ms="' + key + '"><label class="lbl">' + label + '</label><div class="ms-box" tabindex="0"><span class="ms-chips"></span><input class="ms-q" placeholder="' + esc(ph || "Select") + '"></div>' +
+      '<div class="ms-list" hidden>' + list.map(function (x) { return '<label class="ms-opt"><input type="checkbox" value="' + esc(x) + '"' + (sel.indexOf(x) >= 0 ? " checked" : "") + '><span>' + esc(x) + '</span></label>'; }).join("") + '</div></div>';
+  }
+  function sw(key, label, on, hint) {
+    return '<label class="swrow"><span class="switch"><input type="checkbox" data-f="' + key + '"' + (on ? " checked" : "") + '><span></span></span><span><b>' + label + '</b>' + (hint ? '<small>' + hint + '</small>' : "") + '</span></label>';
+  }
+  function selectHtml(key, blank, list, cur) {
+    return '<select class="select" data-f="' + key + '"><option value="">' + blank + '</option>' + list.map(function (x) { return '<option' + (x === cur ? " selected" : "") + '>' + x + '</option>'; }).join("") + '</select>';
+  }
+  function tile(key, ico, label, hint, on) {
+    return '<label class="tile"><span class="tico">' + icon(ico) + '</span><span class="ttx"><b>' + label + '</b><small>' + hint + '</small></span><span class="switch"><input type="checkbox" data-f="' + key + '"' + (on ? " checked" : "") + '><span></span></span></label>';
+  }
+  function sec(id, ico, title, sub, inner) {
+    return '<section class="xsec" id="sec-' + id + '" data-sec="' + id + '"><div class="xgrid">' + inner + '</div></section>';
+  }
+  function jobFormHtml(j) {
+    j = j || {};
+    var heads = j.heads || j.managers || [], ints = j.interviewerList || [], sk = j.skills || [], sv = j.surveys || [];
+    var rightCol = '<div class="xcol">' +
+      '<div>' + msField("skills", 'Skills <button type="button" class="btn sm" id="syncSk">' + icon("refresh", "sm") + 'Sync Skills</button>', SKILLS, sk, "Search and add skills") + '</div>' +
+      '<div class="xpub">' + tile("published", "eye", "Is Published?", "Show on the Open Jobs page", j.published !== false) + tile("closed", "flag", "Closed", "Stop accepting applications", j.status === "closed") +
+        tile("optImage", "camera", "Optional Profile Image?", "Applicants can skip the photo", !!j.optImage) + tile("optResume", "file", "Optional Resume?", "Applicants can skip the resume", !!j.optResume) +
+        tile("linkedin", "link", "Post on LinkedIn", "Also publish this opening", !!j.linkedin) +
+        '<div id="liWrap"><label class="lbl">LinkedIn Accounts</label>' + selectHtml("liAccount", "---Choose LinkedIn Account---", LI_ACCOUNTS, j.liAccount) + '</div></div>' + '</div>';
+    var main = '' +
+      sec("basics", "edit", "Basic details", "",
+        '<div class="span3"><label class="lbl">Title <span class="req">*</span></label><input class="input big" data-f="title" value="' + esc(j.title) + '" placeholder="For example, Senior Django Developer"></div>' +
+        '<div class="span3"><div class="lblrow"><label class="lbl">Description</label><button type="button" class="btn sm ai" id="genAi">' + icon("spark", "sm") + 'Generate with AI</button></div><textarea class="textarea" data-f="desc" rows="4" placeholder="Role summary, responsibilities and must-have skills">' + esc(j.desc) + '</textarea></div>') +
+      sec("team", "users", "Team", "",
+        '<div class="span3 pair">' + msField("interviewers", "Interviewers", DEMO.team, ints, "Add interviewers") + msField("heads", "Recruitment Heads", DEMO.team, heads, "Add recruitment heads") + '</div>') +
+      sec("role", "briefcase", "Role details", "",
+        '<div><label class="lbl">Job Position <span class="req">*</span></label>' + selectHtml("position", "---Choose Job Position---", POSITIONS, j.position) + '</div>' +
+        '<div><label class="lbl">Company</label>' + selectHtml("company", "---Choose Company---", COMPANIES, j.company || COMPANIES[0]) + '</div>' +
+        '<div><label class="lbl">Vacancy</label><div class="stepper"><button type="button" data-step="-1" aria-label="Fewer">&minus;</button><input class="input" data-f="openings" type="number" min="1" value="' + (j.openings || 1) + '"><button type="button" data-step="1" aria-label="More">+</button></div></div>' +
+        '<div><label class="lbl">Start Date <span class="req">*</span></label><input class="input" data-f="start" type="date" value="' + (j.start || DEMO.today) + '"></div>' +
+        '<div><label class="lbl">End Date</label><input class="input" data-f="end" type="date" value="' + (j.end || "") + '"></div>' +
+        '<div>' + msField("surveys", "Survey Templates", DEMO.surveys.map(function (x) { return x.name; }), sv, "Add survey templates") + '</div>');
+
+    return '<div class="xwrap"><div class="xmain" id="xmain"><div class="xleft">' + main + '</div>' + rightCol + '</div></div>';
+  }
+  /* live preview of the card, a completeness ring, scroll-spy nav and the vacancy stepper */
+  function wirePreview(m) {
+    var g = function (n) { return m.querySelector('[data-f="' + n + '"]'); }, ms = function (k) { return m.querySelector('[data-ms="' + k + '"]').getVals(); };
+    var prev = m.querySelector("#xprev");
+    var paint = function () {
+      if (!prev) { return; }
+      var title = g("title").value.trim(), pos = g("position").value, n = Math.max(1, parseInt(g("openings").value, 10) || 1), sk = ms("skills"), ints = ms("interviewers");
+      var end = g("end").value, closed = g("closed").checked, li = g("linkedin").checked;
+      prev.className = "xprev" + (closed ? " closed" : "");
+      prev.innerHTML = (closed ? '<span class="xflag">Closed</span>' : "") +
+        '<div class="ph"><span class="pt">' + (title ? esc(title) : '<i>Untitled opening</i>') + '</span>' + (li ? liIcon() : "") + '</div>' +
+        '<div class="pp">' + (pos ? esc(pos) : "Job position") + '</div>' +
+        '<div class="ptags">' + (sk.length ? sk.slice(0, 3).map(function (x) { return '<span class="tag">' + esc(x) + '</span>'; }).join("") + (sk.length > 3 ? '<span class="tag rest">+' + (sk.length - 3) + '</span>' : "") : '<span class="tag rest">No skills yet</span>') + '</div>' +
+        '<div class="pbar"><span class="muted">0</span><span class="trk2"><i style="width:0"></i></span><span class="muted">' + n + '</span></div>' +
+        '<div class="pfoot"><span class="muted">' + (end ? "Ends " + fmtDate(end) : "No end date") + '</span><span class="pstack">' + (ints.length ? ints.slice(0, 4).map(function (nm) { var f = avatarFace(nm); return '<span class="pav" style="background:' + f.bg + '">' + f.html + '</span>'; }).join("") : "") + '</span></div>';
+    };
+    m.addEventListener("input", paint); m.addEventListener("change", paint); m.addEventListener("click", function () { setTimeout(paint, 0); });
+    m.querySelector(".xmain").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-step]"); if (!b) { return; }
+      var inp = g("openings"); inp.value = Math.max(1, (parseInt(inp.value, 10) || 1) + parseInt(b.getAttribute("data-step"), 10)); paint();
+    });
+    var btns = m.querySelectorAll(".xtabs button");
+    btns.forEach(function (b) { b.addEventListener("click", function () {
+      btns.forEach(function (x) { x.classList.toggle("on", x === b); });
+      m.querySelectorAll(".xsec").forEach(function (sc) { sc.hidden = sc.getAttribute("data-sec") !== b.getAttribute("data-go"); });
+      m.querySelector("#xmain").scrollTop = 0;
+    }); });
+    paint();
+  }
+  function wireJobForm(m) {
+    m.querySelectorAll(".ms").forEach(function (ms) {
+      var box = ms.querySelector(".ms-box"), chips = ms.querySelector(".ms-chips"), list = ms.querySelector(".ms-list"), q = ms.querySelector(".ms-q");
+      var vals = function () { return [].map.call(ms.querySelectorAll(".ms-opt input:checked"), function (i) { return i.value; }); };
+      var paint = function () {
+        chips.innerHTML = vals().map(function (v) { return '<span class="ms-chip">' + esc(v) + '<button type="button" data-rm="' + esc(v) + '" aria-label="Remove ' + esc(v) + '">&times;</button></span>'; }).join("");
+        q.placeholder = vals().length ? "" : q.getAttribute("data-ph");
+      };
+      q.setAttribute("data-ph", q.placeholder); paint();
+      var open = function () { m.querySelectorAll(".ms-list").forEach(function (l) { if (l !== list) { l.hidden = true; } }); list.hidden = false; };
+      box.addEventListener("click", function (e) {
+        var rm = e.target.closest("[data-rm]");
+        if (rm) { [].forEach.call(ms.querySelectorAll(".ms-opt input"), function (i) { if (i.value === rm.getAttribute("data-rm")) { i.checked = false; } }); paint(); return; }
+        q.focus(); open();
+      });
+      q.addEventListener("focus", open);
+      q.addEventListener("input", function () { var t = q.value.toLowerCase(); list.hidden = false; ms.querySelectorAll(".ms-opt").forEach(function (o) { o.hidden = o.textContent.toLowerCase().indexOf(t) < 0; }); });
+      list.addEventListener("change", function () { paint(); q.value = ""; ms.querySelectorAll(".ms-opt").forEach(function (o) { o.hidden = false; }); });
+      ms.getVals = vals;
+    });
+    m.addEventListener("click", function (e) { if (!e.target.closest(".ms")) { m.querySelectorAll(".ms-list").forEach(function (l) { l.hidden = true; }); } });
+    var li = m.querySelector('[data-f="linkedin"]'), sel = m.querySelector('[data-f="liAccount"]'), wrap = m.querySelector("#liWrap");
+    var syncLi = function () { wrap.classList.toggle("off", !li.checked); sel.disabled = !li.checked; };
+    li.addEventListener("change", syncLi); syncLi();
+    m.querySelector("#genAi").addEventListener("click", function () {
+      var t = m.querySelector('[data-f="title"]').value.trim() || "new role", d = m.querySelector('[data-f="desc"]');
+      d.value = "We are hiring a " + t + " to join our team in Gurugram. You will design, build and ship features end to end, work closely with product and QA, and help raise the quality bar. Good communication and ownership matter as much as the technical skills listed below.";
+      toast("Description generated (demo only)");
+    });
+    m.querySelector("#syncSk").addEventListener("click", function () { toast("Skills synced with the master list (demo only)"); });
+  }
+  function readJobForm(m) {
+    var g = function (n) { return m.querySelector('[data-f="' + n + '"]'); }, ms = function (k) { return m.querySelector('[data-ms="' + k + '"]').getVals(); };
+    return { title: g("title").value.trim(), desc: g("desc").value.trim(), interviewerList: ms("interviewers"), heads: ms("heads"), position: g("position").value, start: g("start").value, end: g("end").value,
+      openings: Math.max(1, parseInt(g("openings").value, 10) || 1), company: g("company").value, surveys: ms("surveys"), skills: ms("skills"), published: g("published").checked, closed: g("closed").checked,
+      optImage: g("optImage").checked, optResume: g("optResume").checked, linkedin: g("linkedin").checked, liAccount: g("linkedin").checked ? g("liAccount").value : "" };
+  }
+  function jobModal(j) {
+    var edit = !!j;
+    var m = openModal({ title: edit ? "Edit Recruitment" : "Add Recruitment", body: jobFormHtml(j), foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="save">' + (edit ? "Save changes" : "Create opening") + '</button>' });
+    m.querySelector(".modal").classList.add("xl");
+    wireJobForm(m); wirePreview(m);
+    m.querySelector("#save").addEventListener("click", function () {
+      var v = readJobForm(m);
+      if (!v.title) { m.querySelector('[data-f="title"]').focus(); toast("Please enter a title"); return; }
+      if (!v.position) { m.querySelector('[data-f="position"]').focus(); toast("Please choose a job position"); return; }
+      if (v.end && v.start && v.end < v.start) { toast("End date cannot be before the start date"); return; }
+      var heads = v.heads.length ? v.heads : (j && j.managers) || ["Admin User"];
+      var rec = { title: v.title, desc: v.desc, interviewerList: v.interviewerList, heads: v.heads, managers: heads, position: v.position, dept: (j && j.dept) || "Development", start: v.start, end: v.end || v.start, openings: v.openings,
+        company: v.company, surveys: v.surveys, skills: v.skills, published: v.published, optImage: v.optImage, optResume: v.optResume, linkedin: v.linkedin, liAccount: v.liAccount };
+      if (edit) {
+        rec.openings = Math.max(rec.openings, j.filled);
+        Object.keys(rec).forEach(function (k) { j[k] = rec[k]; });
+        if (v.closed) { j.status = "closed"; } else if (j.status === "closed") { j.status = "open"; }
+      } else {
+        rec.id = Math.max.apply(null, DEMO.jobs.map(function (x) { return x.id; })) + 1; rec.filled = 0; rec.loc = "Gurugram"; rec.type = "Full time"; rec.exp = "Not set"; rec.salary = "Not set"; rec.status = v.closed ? "closed" : "open";
+        DEMO.jobs.unshift(rec);
+      }
+      m.remove(); refresh(); toast(edit ? "Changes saved (demo only)" : "Opening created (demo only)");
+    });
+  }
+  function newDrawer() { jobModal(); }
+  function editDrawer(j) { jobModal(j); }
+
+  /* ---- View details: everything that used to crowd the card ---- */
+  function detailsDrawer(j) {
+    var pct = j.filled / j.openings * 100;
+    var body = '<div class="detail"><div class="detail-top">' + statusChip(j) + '<span class="dept">' + j.dept + '</span></div>' +
+      '<dl class="dl"><dt>Location</dt><dd>' + j.loc + '</dd><dt>Type</dt><dd>' + j.type + '</dd><dt>Experience</dt><dd>' + j.exp + '</dd><dt>Salary</dt><dd>' + j.salary + '</dd>' +
+      '<dt>LinkedIn</dt><dd>' + (j.linkedin ? liIcon() + ' Posted' : '<span class="muted">Not posted</span>') + '</dd><dt>Opens</dt><dd>' + fmtDate(j.start) + '</dd><dt>Closes</dt><dd>' + fmtDate(j.end) + '</dd>' +
+      '<dt>Vacancies</dt><dd>' + j.filled + ' of ' + j.openings + ' filled<div class="bar ' + (pct === 100 ? "good" : "") + '" style="margin-top:0.5rem"><i style="width:' + pct + '%"></i></div></dd>' +
+      '<dt>Candidates</dt><dd><a href="pipeline.html?job=' + j.id + '">' + applicants(j) + ' in the pipeline</a></dd>' +
+      '<dt>Managers</dt><dd>' + j.managers.map(function (m) { return '<div class="row" style="margin-bottom:0.375rem">' + avatar(m, "xs") + '<span>' + m + '</span></div>'; }).join("") + '</dd></dl>' +
+      (j.skills.length ? '<h4>Skills</h4><div class="tags">' + j.skills.map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div>' : "") +
+      (j.desc ? '<h4>About the role</h4><p>' + j.desc + '</p>' : "") + '</div>';
+    var d = openDrawer({ title: j.title, body: body, foot: '<button class="btn danger" id="dDel" style="margin-right:auto">' + icon("trash", "sm") + 'Delete</button><button class="btn" id="dEdit">' + icon("edit", "sm") + 'Edit</button><a class="btn primary" href="pipeline.html?job=' + j.id + '">Open pipeline</a>' });
+    d.querySelector("#dEdit").addEventListener("click", function () { d.close(); setTimeout(function () { editDrawer(j); }, 200); });
+    d.querySelector("#dDel").addEventListener("click", function () { confirmDelete(j, d); });
+  }
+
+  /* ---- Duplicate: a fresh, open copy with nothing filled ---- */
+  function duplicateJob(j) {
+    var copy = JSON.parse(JSON.stringify(j));
+    copy.id = Math.max.apply(null, DEMO.jobs.map(function (x) { return x.id; })) + 1;
+    copy.title = j.title + " (copy)"; copy.filled = 0; copy.status = "open"; copy.start = DEMO.today; copy.archived = false;
+    DEMO.jobs.unshift(copy);
+    if (state.f === "closed" || state.f === "archived") { state.f = "open"; }
+    refresh(); toast("Duplicated as " + copy.title);
+  }
+  /* ---- Dynamic link: an apply link that tags where candidates came from ---- */
+  function linkModal(j) {
+    var sources = ["LinkedIn", "Naukri", "Referral", "Email", "Website", "WhatsApp"];
+    var slug = j.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    var make = function (src) { return "https://careers.arielsoftware.in/apply/" + j.id + "-" + slug + "?source=" + src.toLowerCase(); };
+    var m = openModal({ title: "Create dynamic link", body: '<p class="muted" style="font-size:var(--fs-sm);margin-bottom:0.875rem">Anyone who applies through this link is tagged with the source you pick.</p><div class="form-grid"><div class="full"><label class="lbl">Source</label><select class="select" id="dlSrc">' + sources.map(function (x) { return "<option>" + x + "</option>"; }).join("") + '</select></div><div class="full"><label class="lbl">Link</label><input class="input" id="dlUrl" readonly value="' + make(sources[0]) + '"></div></div>', foot: '<button class="btn" data-close>Close</button><button class="btn primary" id="dlCopy">' + icon("copy", "sm") + "Copy link</button>" });
+    m.querySelector("#dlSrc").addEventListener("change", function () { m.querySelector("#dlUrl").value = make(this.value); });
+    m.querySelector("#dlCopy").addEventListener("click", function () {
+      var url = m.querySelector("#dlUrl"); url.select();
+      var done = function () { toast("Link copied"); };
+      var fallback = function () { var ok = false; try { ok = document.execCommand("copy"); } catch (y) {} if (ok) { done(); } else { toast("Press Ctrl+C to copy the selected link"); } };
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url.value).then(done, fallback); } else { fallback(); }
+    });
+  }
+
+  /* ---- Delete: always asks first ---- */
+  function confirmDelete(j, drawerToClose) {
+    var m = openModal({ title: "Delete this opening?", body: '<p><b>' + j.title + '</b> will be removed from the list. Its ' + applicants(j) + ' candidates are kept and stay in the Candidates page.</p>', foot: '<button class="btn" data-close>Cancel</button><button class="btn bad" data-close id="yes">Delete opening</button>' });
+    m.querySelector("#yes").addEventListener("click", function () {
+      DEMO.jobs = DEMO.jobs.filter(function (x) { return x.id !== j.id; });
+      if (drawerToClose) { drawerToClose.close(); }
+      refresh(); toast("Opening deleted (demo only)");
+    });
+  }
+
+  /* ---- clicks on cards and rows ---- */
+  var out = document.getElementById("out");
+  out.addEventListener("click", function (e) {
+    var mb = e.target.closest("[data-menu]");
+    if (mb) {
+      e.stopPropagation();
+      if (menuAnchor === mb) { closeMenu(); return; }
+      var j = jobById(mb.dataset.menu);
+      openMenu(mb, '<button class="item" data-pick="edit">' + icon("edit", "sm") + 'Edit</button>' +
+        '<button class="item" data-pick="duplicate">' + icon("copy", "sm") + 'Duplicate</button>' +
+        '<button class="item" data-pick="link">' + icon("link", "sm") + 'Create dynamic link</button>' +
+        '<button class="item" data-pick="archive">' + icon(j.archived ? "refresh" : "inbox", "sm") + (j.archived ? "Unarchive" : "Archive") + '</button>' +
+        '<div class="sep"></div><button class="item danger" data-pick="delete">' + icon("trash", "sm") + 'Delete</button>', function (v) {
+        if (v === "edit") { editDrawer(j); }
+        if (v === "duplicate") { duplicateJob(j); }
+        if (v === "link") { linkModal(j); }
+        if (v === "archive") { j.archived = !j.archived; toast(j.archived ? "Archived. Find it under Filter, Archived." : "Moved back to your openings"); refresh(); }
+        if (v === "delete") { confirmDelete(j); }
+      }, 0, "compact");
+      return;
+    }
+    if (e.target.closest("[data-new]")) { newDrawer(); return; }
+    var host = e.target.closest("[data-id]"); if (host && !e.target.closest("a")) { go("pipeline.html?job=" + host.dataset.id); }   // a card or row opens that job's pipeline
+  });
+  out.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.classList.contains("job-card")) { go("pipeline.html?job=" + e.target.dataset.id); } });
+
+  /* ---- heading tools ---- */
+  var xs = document.getElementById("xs"), q = document.getElementById("q");
+  xs.addEventListener("click", function () { q.focus(); });
+  q.addEventListener("input", function () { state.q = q.value.toLowerCase(); xs.classList.toggle("has", !!q.value); draw(); });
+  document.getElementById("viewBtn").addEventListener("click", function () { state.v = state.v === "cards" ? "table" : "cards"; refresh(); });
+  document.getElementById("filterBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (menuAnchor === this) { closeMenu(); return; }
+    var c = counts();
+    openMenu(this, '<h4>Show</h4>' + FILTERS.map(function (f) { return '<button class="item' + (state.f === f[0] ? " on" : "") + '" data-pick="' + f[0] + '">' + f[1] + '<span class="tail">' + c[f[0]] + '</span></button>'; }).join(""), function (v) { state.f = v; refresh(); }, 200);
+  });
+  document.getElementById("exportBtn").addEventListener("click", function () { toast("Exported " + rows().length + " openings (demo only)"); });
+  document.getElementById("create").addEventListener("click", newDrawer);
+
+  refresh();
+  window.addEventListener("load", syncSummary);   // the header is built by shell.js, after this script
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

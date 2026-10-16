@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Pipeline</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  /* =====================================================================
+     RECRUITMENT PIPELINE
+     1. summary header (one recruitment, in a few lines)
+     2. a thin line, then the toolbar
+     3. the board: one lane per stage, drag cards between lanes
+     ===================================================================== */
+  .rhead { padding: 1rem 1.25rem 1rem; margin-bottom: 0; transition: padding 0.3s ease; }
+  .rhead.min { padding-bottom: 0.75rem; }
+  /* the details fold away completely: only the title row stays */
+  .rbody { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows 0.35s ease, opacity 0.25s ease; }
+  .rbody > .rin { overflow: hidden; min-height: 0; }
+  .rhead.min .rbody { grid-template-rows: 0fr; opacity: 0; }
+  .pmin .lane-cards { max-height: calc(100vh - 12rem); }
+  .pmin .bline { margin-top: 0.6rem; }
+  /* previous / next pipeline, and the details switch */
+  .flip { display: inline-flex; align-items: center; gap: 0.125rem; border: 1px solid var(--line); border-radius: 6.1875rem; padding: 0.125rem; background: var(--surface); }
+  .flip button { width: 1.875rem; height: 1.875rem; border: 0; border-radius: 50%; background: none; color: var(--ink-2); display: grid; place-items: center; transition: background 0.15s, color 0.15s, transform 0.15s; }
+  .flip button:hover { background: var(--brand-soft); color: var(--brand); }
+  .flip button:active { transform: scale(0.9); }
+  .flip .cnt { min-width: 3rem; text-align: center; font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .dsw { display: inline-flex; align-items: center; gap: 0.5rem; height: 2.25rem; padding: 0 0.75rem 0 0.875rem; border: 1px solid var(--line); border-radius: 6.1875rem; background: var(--surface); font-size: var(--fs-sm); font-weight: 600; color: var(--ink-2); cursor: pointer; user-select: none; }
+  .dsw:hover { background: var(--surface-2); }
+  .dsw .switch { width: 2.125rem; height: 1.25rem; }
+  .dsw .switch span::after { width: 0.875rem; height: 0.875rem; }
+  .dsw .switch input:checked + span::after { transform: translateX(0.875rem); }
+  .rh-sep { width: 1px; height: 1.5rem; background: var(--line); margin: 0 0.25rem; }
+  .slide-r { animation: slideR 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .slide-l { animation: slideL 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes slideR { from { opacity: 0; transform: translateX(1.5rem); } to { opacity: 1; transform: none; } }
+  @keyframes slideL { from { opacity: 0; transform: translateX(-1.5rem); } to { opacity: 1; transform: none; } }
+  /* details */
+  .lipill { display: inline-flex; align-items: center; gap: 0.4375rem; padding: 0.1875rem 0.6875rem 0.1875rem 0.4375rem; border-radius: 6.1875rem; background: #eaf3fc; color: #0a66c2; font-weight: 600; font-size: var(--fs-xs); border: 1px solid transparent; }
+  .lipill.off { background: transparent; border: 1px dashed var(--ink-3); color: var(--ink-3); cursor: pointer; }
+  .lipill.off:hover { color: #0a66c2; border-color: #0a66c2; }
+  .cdate { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.1875rem 0.625rem; border-radius: 6.1875rem; background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-xs); font-weight: 600; }
+  .cdate.soon { background: var(--warn-soft); color: var(--warn); }
+  .cdate svg.i { width: 0.8125rem; height: 0.8125rem; }
+  .rgrid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 1rem 2.25rem; margin-top: 1rem; }
+  @media (max-width: 960px) { .rgrid { grid-template-columns: minmax(0, 1fr); } }
+  .rsec + .rsec { margin-top: 0.875rem; }
+  .rsec h5 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; margin: 0 0 0.4375rem; display: flex; align-items: center; gap: 0.5rem; }
+  .jd { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: pre-line; }
+  .jd.open { -webkit-line-clamp: unset; }
+  .jdmore { border: 0; background: none; padding: 0; margin-top: 0.1875rem; color: var(--brand); font-size: var(--fs-xs); font-weight: 600; }
+  .skl { display: flex; flex-wrap: wrap; gap: 0.3125rem; }
+  .skl .tag { font-size: var(--fs-xs); padding: 0.1875rem 0.625rem; background: var(--brand-soft); color: var(--brand); font-weight: 600; border-radius: 6.1875rem; }
+  .pplist { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .pp { display: inline-flex; align-items: center; gap: 0.4375rem; padding: 0.125rem 0.6875rem 0.125rem 0.125rem; border: 1px solid var(--line); border-radius: 6.1875rem; font-size: var(--fs-sm); background: var(--surface); }
+  .pp .av { --s: 1.5rem; }
+  .pp small { color: var(--ink-3); font-size: var(--fs-xs); }
+  .rh-top { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+  .rsel { display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%; border: 0; background: none; padding: 0.125rem 0.5rem 0.125rem 0; border-radius: 0.5rem; font-size: var(--fs-xl); font-weight: 650; letter-spacing: -0.015em; color: var(--ink); }
+  .rsel .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rsel svg.i { width: 0.9rem; height: 0.9rem; color: var(--ink-3); transition: transform 0.15s; }
+  .rsel:hover, .rsel.open { color: var(--brand); }
+  .rsel.open svg.i { transform: rotate(180deg); }
+  .li { width: 1.125rem; height: 1.125rem; flex: none; display: block; }
+  .rh-acts { margin-left: auto; display: flex; gap: 0.375rem; align-items: center; }
+  .rh-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.875rem; margin-top: 0.25rem; font-size: var(--fs-xs); color: var(--ink-3); }
+  .rh-meta span { display: inline-flex; align-items: center; gap: 0.3125rem; }
+  .rh-meta svg.i { width: 0.8125rem; height: 0.8125rem; }
+  .rh-meta .soon { color: var(--warn); font-weight: 600; }
+  .rh-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 0; margin-top: 0.875rem; }
+  .st1 { padding: 0 1.375rem; border-left: 1px solid var(--line); line-height: 1.2; }
+  .st1:first-child { padding-left: 0; border-left: 0; }
+  .st1 b { display: block; font-size: 1.2rem; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .st1 span { font-size: var(--fs-xs); color: var(--ink-3); }
+  .st1.vac { min-width: 12.5rem; }
+  .st1.vac .bar { margin: 0.3125rem 0 0.1875rem; height: 0.4375rem; }
+  .st1.mg { display: flex; align-items: center; gap: 0.5rem; }
+  .funnel { display: flex; gap: 2px; height: 0.4375rem; margin-top: 0.95rem; border-radius: 6.1875rem; overflow: hidden; background: var(--surface-2); }
+  .funnel i { display: block; transition: flex 0.35s ease; cursor: pointer; }
+  .funnel i:hover { filter: brightness(0.92); }
+  .flegend { display: flex; flex-wrap: wrap; gap: 0.125rem 0.375rem; margin-top: 0.5rem; }
+  .flegend button { display: inline-flex; align-items: center; gap: 0.375rem; border: 0; background: none; padding: 0.125rem 0.4375rem; border-radius: 6.1875rem; font-size: var(--fs-xs); color: var(--ink-2); }
+  .flegend button:hover { background: var(--surface-2); }
+  .flegend i { width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+  .flegend b { font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .closed-note { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; border-radius: 0.625rem; background: var(--warn-soft); color: var(--warn); font-size: var(--fs-sm); }
+
+  .bline { height: 1px; background: var(--line); margin: 0.9rem 0 0.75rem; }
+  .tools { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .tools .grow { flex: 1 1 auto; }
+  .rejtog { display: inline-flex; align-items: center; gap: 0.375rem; height: 2.25rem; padding: 0 0.75rem; border-radius: 0.625rem; border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-sm); font-weight: 600; color: var(--ink-2); }
+  .rejtog:hover { background: var(--surface-2); color: var(--ink); }
+  .rejtog.on { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+  .rejtog .n { font-size: var(--fs-xs); opacity: 0.8; }
+
+  /* ---- board ---- */
+  .board { display: flex; gap: 0.75rem; overflow-x: auto; padding: 0 0 0.75rem; align-items: flex-start; min-height: 18rem; }
+  .lane { flex: 0 0 17rem; background: var(--surface-2); border-radius: var(--radius-lg); padding: 0.5rem; min-height: 14rem; min-width: 0; display: flex; flex-direction: column; transition: outline-color 0.15s, background 0.15s, opacity 0.15s; outline: 2px dashed transparent; outline-offset: -2px; }
+  .lane.over { outline-color: var(--brand); background: color-mix(in srgb, var(--brand) 7%, var(--surface-2)); }
+  .lane.lane-drag { opacity: 0.4; }
+  .lane.stage-over { outline-color: var(--ink-3); }
+  .lane-head { display: flex; align-items: center; gap: 0.4375rem; padding: 0.25rem 0.125rem 0.5rem 0.375rem; cursor: grab; border-radius: 0.5rem; }
+  .lane-head:active { cursor: grabbing; }
+  .lane-head .dot { width: 0.625rem; height: 0.625rem; border-radius: 0.1875rem; flex: none; }
+  .lane-head b { font-size: var(--fs-md); font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lane-head .n { font-size: var(--fs-xs); background: var(--surface); color: var(--ink-2); padding: 1px 0.5rem; border-radius: 6.1875rem; font-variant-numeric: tabular-nums; flex: none; }
+  .lane-head .lm { margin-left: auto; display: inline-flex; align-items: center; gap: 0.125rem; flex: none; }
+  .lane-head .lm .av-stack { opacity: 0; max-width: 0; overflow: hidden; transition: opacity 0.2s, max-width 0.25s; }
+  .lane:hover .lm .av-stack { opacity: 1; max-width: 6rem; }
+  .lane-head .icon-btn { width: 1.625rem; height: 1.625rem; opacity: 0; transition: opacity 0.15s; }
+  .lane:hover .lane-head .icon-btn, .lane-head .icon-btn.open, .lane-head .icon-btn:focus-visible { opacity: 1; }
+  .lane-cards { overflow-y: auto; max-height: calc(100vh - 22rem); min-height: 4rem; padding: 2px; margin: -2px; scrollbar-width: thin; flex: 1 1 auto; }
+  .lane-empty { text-align: center; color: var(--ink-3); font-size: var(--fs-xs); padding: 1.5rem 0.5rem; border: 1.5px dashed var(--line); border-radius: 0.75rem; margin: 2px; }
+  .lane-more { width: 100%; margin-top: 0.125rem; border: 0; background: none; color: var(--brand); font-size: var(--fs-xs); font-weight: 600; padding: 0.4375rem; border-radius: 0.5rem; }
+  .lane-more:hover { background: var(--surface); }
+  .lane.rej { background: color-mix(in srgb, var(--bad-soft) 55%, var(--surface-2)); }
+  .lane.mini { flex-basis: 3.125rem; cursor: pointer; }
+  .lane.mini .lane-head { flex-direction: column; padding: 0.5rem 0; gap: 0.5rem; cursor: pointer; }
+  .lane.mini .lane-head b { writing-mode: vertical-rl; }
+  .lane.mini .lane-cards, .lane.mini .lm, .lane.mini .icon-btn { display: none; }
+
+  /* ---- candidate card ---- */
+  .pcard { position: relative; padding: 0.6875rem 0.75rem 0.5625rem; margin-bottom: 0.4375rem; border-radius: 0.75rem; cursor: grab; user-select: none; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+  .pcard:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); box-shadow: 0 0.375rem 1rem color-mix(in srgb, var(--brand) 11%, transparent); }
+  .pcard.sel { border-color: var(--brand); background: var(--brand-soft); }
+  .pcard .top { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0; }
+  .pcard .who { display: block; flex: 1 1 auto; min-width: 0; }
+  .pcard .who b { font-size: var(--fs-md); }
+  .pcard .ring { width: 2.125rem; height: 2.125rem; }
+  .pcard .ring::before { width: 1.625rem; height: 1.625rem; font-size: 0.6rem; }
+  .pcard .ck { position: absolute; left: 0.3125rem; top: 0.3125rem; opacity: 0; transition: opacity 0.12s; z-index: 2; }
+  .pcard:hover .ck, .pcard.sel .ck { opacity: 1; }
+  .pcard .ck input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--brand); cursor: pointer; }
+  .pcard .mid { display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.5rem; margin-top: 0.5rem; }
+  .pcard .mid .tag { font-size: 0.64rem; padding: 1px 0.4375rem; }
+  .pcard .stars svg { width: 0.75rem; height: 0.75rem; }
+  .pcard .foot { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.375rem; color: var(--ink-3); font-size: var(--fs-xs); min-height: 1.5rem; }
+  .pcard .foot .when { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard .foot .when svg.i { width: 0.8125rem; height: 0.8125rem; flex: none; }
+  .pcard .foot .iv { color: var(--brand); font-weight: 600; }
+  .pcard .foot .ml { color: var(--good); }
+  .pcard .qa { margin-left: auto; display: flex; gap: 1px; opacity: 0; transition: opacity 0.15s; flex: none; }
+  .pcard:hover .qa, .pcard:focus-within .qa { opacity: 1; }
+  .qa button { width: 1.5rem; height: 1.5rem; border: 0; border-radius: 0.4375rem; background: none; color: var(--ink-2); display: grid; place-items: center; }
+  .qa button:hover { background: var(--surface-2); color: var(--brand); }
+  .qa svg.i { width: 0.9375rem; height: 0.9375rem; }
+  .pcard.drag { opacity: 0.35; }
+  .pcard .rj { font-size: var(--fs-xs); color: var(--bad); margin-top: 0.375rem; }
+  .hiredbadge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--good); }
+
+  /* ---- bulk bar ---- */
+  .bulk { position: sticky; bottom: 1rem; margin: 0.875rem auto 0; width: fit-content; max-width: 100%; background: var(--ink); color: var(--bg); border-radius: 0.75rem; padding: 0.5rem 0.625rem 0.5rem 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; box-shadow: var(--shadow-lg); z-index: 15; font-size: var(--fs-sm); }
+  .bulk .btn { background: transparent; border-color: color-mix(in srgb, var(--bg) 30%, transparent); color: var(--bg); }
+  .bulk .btn:hover { background: color-mix(in srgb, var(--bg) 14%, transparent); }
+
+  /* ---- list view ---- */
+  .lv td .select { height: 1.875rem; width: 9.5rem; font-size: var(--fs-sm); padding: 0 0.5rem; }
+  .lv tbody tr { cursor: pointer; }
+
+  /* ---- drawer content ---- */
+  .dh { display: flex; align-items: center; gap: 0.875rem; margin-bottom: 1rem; }
+  .dh h2 { font-size: var(--fs-xl); }
+  .dh .sub { color: var(--ink-2); font-size: var(--fs-sm); }
+  .dact { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 1.125rem; }
+  .track { display: flex; gap: 3px; margin: 0.25rem 0 1.25rem; }
+  .track button { flex: 1 1 0; min-width: 0; border: 0; background: none; padding: 0.4375rem 0 0; position: relative; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track button::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 4px; background: var(--surface-3); }
+  .track button.done::before { background: color-mix(in srgb, var(--brand) 45%, var(--surface-3)); }
+  .track button.now::before { background: var(--brand); }
+  .track button.now { color: var(--brand); }
+  .track button:hover { color: var(--ink); }
+  .dsec { margin-bottom: 1.25rem; }
+  .dsec h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; margin-bottom: 0.5rem; }
+  .rate { display: inline-flex; gap: 0.125rem; }
+  .rate button { border: 0; background: none; color: var(--surface-3); padding: 0; }
+  .rate button.on { color: var(--c4); }
+  .rate button svg { width: 1.25rem; height: 1.25rem; }
+  .note { padding: 0.5625rem 0.75rem; border-radius: 0.625rem; background: var(--surface-2); margin-bottom: 0.375rem; font-size: var(--fs-sm); }
+  .note small { display: block; color: var(--ink-3); font-size: var(--fs-xs); margin-bottom: 0.125rem; }
+  .mini { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: 0.625rem; margin-bottom: 0.375rem; font-size: var(--fs-sm); }
+  .mini small { display: block; color: var(--ink-3); font-size: var(--fs-xs); }
+  .drop { text-align: center; border: 1.5px dashed var(--line); border-radius: 0.75rem; padding: 1.5rem 1rem; color: var(--ink-2); font-size: var(--fs-sm); background: var(--surface-2); }
+  .pickrow { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+  .pickrow:last-child { border-bottom: 0; }
+  .fpanel { padding: 0.5rem 0.625rem 0.625rem; min-width: 15rem; }
+  .fpanel label { display: block; font-size: var(--fs-xs); color: var(--ink-3); margin: 0.5rem 0 0.1875rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .fpanel .select { height: 2rem; }
+  @media (max-width: 720px) { .st1 { padding: 0 0.875rem; } .lane { flex-basis: 15.5rem; } .lane-cards { max-height: none; } }
+
+  /* =====================================================================
+     VERSION 2 - details on the side, a quiet header, no stage bar, no toolbar row.
+     Title and a few actions on top; the role brief on the left; the board on the right.
+     ===================================================================== */
+  .ptop { display: flex; align-items: flex-start; gap: 0.75rem 1.5rem; flex-wrap: wrap; margin-bottom: 1.125rem; }
+  .pt { flex: 1 1 24rem; min-width: 0; }
+  .pt-row { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+  .ptitle { margin: 0; font-size: var(--fs-2xl); font-weight: 650; letter-spacing: -0.015em; color: var(--ink); }
+  .pt .rh-meta { margin-top: 0.125rem; font-size: var(--fs-sm); gap: 0.25rem 1.125rem; }
+  .pt .rh-meta svg.i { width: 0.9375rem; height: 0.9375rem; }
+  .pacts { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding-top: 0.25rem; }
+  .pacts .btn.primary { height: 2.25rem; }
+  .xbtn.on { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
+  .xbtn { position: relative; overflow: visible; }
+  .xbtn .xl { overflow: hidden; }
+  .fdot { position: absolute; top: -0.3125rem; right: -0.3125rem; min-width: 1rem; height: 1rem; padding: 0 0.25rem; border-radius: 6.1875rem; background: var(--brand); color: var(--brand-ink); font-size: 0.62rem; font-weight: 700; display: grid; place-items: center; }
+
+  .pgrid { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; gap: 1.25rem; align-items: start; }
+  .pv.min .pgrid { grid-template-columns: minmax(0, 1fr); }
+  .pv.min .brief { display: none; }
+  .pmain { min-width: 0; }
+  .brief { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.125rem 1.125rem 1.25rem; scrollbar-width: thin; margin: 0; }
+  .brief .rsec { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .bk-k { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 0.75rem; }
+  .bk-k b { display: block; font-size: 1.6rem; font-weight: 650; letter-spacing: -0.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .bk-k span { font-size: var(--fs-xs); color: var(--ink-3); }
+  .bk-vt { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; font-size: var(--fs-sm); color: var(--ink-2); margin-bottom: 0.4375rem; }
+  .bk-vt b { font-size: 1.05rem; color: var(--ink); }
+  .bk-vt small { color: var(--ink-3); font-size: var(--fs-xs); }
+  .bk-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.625rem; font-size: var(--fs-xs); }
+  .brief .closed-note { margin-top: 1rem; }
+  .brief .pplist { flex-direction: column; align-items: flex-start; gap: 0.3125rem; }
+
+  /* lanes: no grey tray, each lane starts with a small header tile */
+  .board { gap: 0.875rem; padding: 0 0 1rem; min-height: 24rem; }
+  .lane { flex: 1 0 13.5rem; background: transparent; padding: 0.25rem; border-radius: 0.875rem; min-height: 12rem; }
+  .lane.over { background: color-mix(in srgb, var(--brand) 6%, transparent); outline-color: var(--brand); }
+  .lane.rej { background: transparent; }
+  .lane-head { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--sc, var(--ink-3)); border-radius: 0.625rem; padding: 0.5rem 0.4375rem 0.5rem 0.625rem; margin-bottom: 0.5rem; }
+  .lane-head .dot { display: none; }
+  .lane-head .n { background: var(--surface-2); font-weight: 600; }
+  .lane.mini { flex: 0 0 3rem; }
+  .lane.mini .lane-head { padding: 0.625rem 0; }
+  .lane-cards { max-height: calc(100vh - 11rem); }
+  .pmin .lane-cards { max-height: calc(100vh - 11rem); }
+
+  /* cards: flatter, AI match as a small pill, a hairline above the footer */
+  .pcard { box-shadow: none; border-radius: 0.75rem; padding: 0.75rem 0.8125rem 0.5rem; }
+  .pcard:hover { box-shadow: 0 0.25rem 0.875rem color-mix(in srgb, var(--ink) 7%, transparent); }
+  .pcard .top { align-items: flex-start; }
+  .pcard .who b { display: block; line-height: 1.25; }
+  .pcard .who small { display: block; margin-top: 0.0625rem; }
+  .aip { display: inline-flex; align-items: center; gap: 0.1875rem; flex: none; height: 1.375rem; padding: 0 0.5rem 0 0.375rem; border-radius: 6.1875rem; font-size: var(--fs-xs); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .aip svg.i { width: 0.75rem; height: 0.75rem; }
+  .aip.hi { background: var(--good-soft); color: var(--good); }
+  .aip.mid { background: var(--brand-soft); color: var(--brand); }
+  .aip.lo { background: var(--warn-soft); color: var(--warn); }
+  .pcard .foot { margin-top: 0.625rem; padding-top: 0.4375rem; border-top: 1px solid var(--line); }
+  .pcard .foot { position: relative; }
+  .pcard .qa { position: absolute; right: -0.25rem; bottom: -0.125rem; background: var(--surface); padding-left: 0.25rem; border-radius: 0.5rem; }
+  .pcard.sel .qa { background: var(--brand-soft); }
+  @media (max-width: 1100px) { .pgrid { grid-template-columns: minmax(0, 1fr); } .brief { position: static; max-height: none; } }
+  /* ---- details strip on top, under the title (replaces the side panel) ---- */
+  .pgrid { display: block; }
+  .brief { position: static; max-height: none; overflow: visible; display: grid; grid-template-columns: minmax(15rem, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0; padding: 1rem 0; margin-bottom: 1.125rem; }
+  .brief .bc { padding: 0 1.25rem; min-width: 0; border-left: 1px solid var(--line); }
+  .brief .bc:first-child { border-left: 0; }
+  .brief .rsec { margin-top: 0; padding-top: 0; border-top: 0; }
+  .brief .rsec + .rsec { margin-top: 0.875rem; }
+  .brief .bk-dates { margin-bottom: 0.75rem; }
+  .brief .bk-v { margin-top: 0.875rem; }
+  .brief .jd { -webkit-line-clamp: 3; }
+  .bk-k { grid-template-columns: repeat(4, auto); justify-content: start; gap: 0.75rem 1.5rem; }
+  .pv.min .brief { display: none; }
+  body:not(.pmin) .lane-cards { max-height: calc(100vh - 21rem); }
+  @media (max-width: 1100px) { .brief { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem 0; } .brief .bc:nth-child(odd) { border-left: 0; } }
+  @media (max-width: 640px) { .brief { grid-template-columns: minmax(0, 1fr); } .brief .bc { border-left: 0; } }
+  /* ---- round 3: title chips, three-column details card, bigger cards, tinted lanes ---- */
+  .pt-row { gap: 0.5rem 0.75rem; }
+  .pt-row .pos { background: var(--surface); border: 1px solid var(--line); }
+  .pt-row .lipill { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .pt-row .cdate { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .brief { position: relative; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) minmax(0, 1.6fr); padding: 1.125rem 0 1.25rem; }
+  .brief { margin-bottom: 1.25rem !important; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+  .pair .rsec + .rsec { margin-top: 0; }
+  .brief .bc { padding: 0 1.5rem; }
+  .brief .bc:last-of-type { padding-right: 3.25rem; }
+  .brief .jd { -webkit-line-clamp: 5; font-size: var(--fs-md); }
+  .brief .rsec h5 { margin-bottom: 0.5rem; }
+  .brief .bk-k { grid-template-columns: repeat(2, auto); justify-content: start; gap: 0.75rem 2rem; margin-top: 1rem; padding-top: 0.875rem; border-top: 1px solid var(--line); }
+  .bmore { position: absolute; top: 0.75rem; right: 0.75rem; width: 2.125rem; padding: 0; justify-content: center; }
+  body:not(.pmin) .lane-cards { max-height: calc(100vh - 19rem); }
+
+  .board { gap: 1rem; }
+  .lane { flex: 1 0 15.5rem; background: color-mix(in srgb, var(--sc, var(--ink-3)) 7%, var(--surface-2)); padding: 0.625rem; border-radius: 1rem; }
+  .lane.rej { background: color-mix(in srgb, var(--bad) 6%, var(--surface-2)); }
+  .lane.mini { flex: 0 0 3.25rem; }
+  .lane.over { background: color-mix(in srgb, var(--brand) 9%, var(--surface-2)); }
+  .lane-head { background: none; border: 0; border-radius: 0.5rem; padding: 0.25rem 0.25rem 0.75rem; margin: 0; }
+  .lane-head .dot { display: block; width: 0.75rem; height: 0.75rem; border-radius: 50%; }
+  .lane-head b { font-size: var(--fs-lg); }
+  .lane-head .n { background: color-mix(in srgb, var(--sc, var(--ink-3)) 16%, var(--surface)); color: var(--ink); font-weight: 700; padding: 0.0625rem 0.5625rem; }
+  .lane.mini .lane-head { padding: 0.75rem 0; }
+
+  .pcard { padding: 0.9375rem 1rem 0.75rem; margin-bottom: 0.625rem; border-radius: 0.875rem; }
+  .pcard .top { gap: 0.75rem; }
+  .pcard .av { --s: 2.75rem; }
+  .pcard .who b { font-size: 1rem; }
+  .pcard .who small { font-size: var(--fs-sm); margin-top: 0.125rem; }
+  .pcard .mid { margin-top: 0.75rem; gap: 0.375rem 0.5rem; }
+  .pcard .mid .tag { font-size: 0.72rem; padding: 0.125rem 0.5625rem; }
+  .pcard .stars svg { width: 0.875rem; height: 0.875rem; }
+  .aip { height: 1.5rem; font-size: var(--fs-sm); padding: 0 0.625rem 0 0.4375rem; }
+  .pcard .foot { margin-top: 0.8125rem; padding-top: 0.5625rem; font-size: var(--fs-sm); }
+  .pcard .foot .when svg.i { width: 0.9375rem; height: 0.9375rem; }
+  /* scrolling still works everywhere on this page, but no scroll bar is drawn */
+  html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  /* ---- round 4: lanes run the full height; a thin scroll bar at the bottom moves the board sideways ---- */
+  .board { align-items: stretch; overflow-x: auto; overflow-y: hidden; min-height: 18rem; padding-bottom: 0.625rem; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent; }
+  .board::-webkit-scrollbar { display: block; height: 0.5rem; width: auto; }
+  .board::-webkit-scrollbar-track { background: transparent; }
+  .board::-webkit-scrollbar-thumb { background: var(--ink-3); border-radius: 6.1875rem; }
+  .board::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
+  .lane { min-height: 0; }
+  .lane-cards, body:not(.pmin) .lane-cards, .pmin .lane-cards { max-height: none !important; flex: 1 1 0; min-height: 0; }
+  /* ---- round 5: the candidate card (name, AI ring, email + source, applied date and quick actions) ---- */
+  .lane { flex: 1 0 17.5rem; }
+  .pcard { padding: 0.875rem 1rem 0.625rem; }
+  .pcard .top { align-items: center; gap: 0.75rem; }
+  .pcard .av { --s: 2.75rem; }
+  .pcard .who b { font-size: 1.02rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pcard .who .hiredbadge { display: block; margin-top: 0.125rem; }
+  .pcard .ring { width: 2.75rem; height: 2.75rem; }
+  .pcard .ring::before { width: 2.125rem; height: 2.125rem; font-size: 0.78rem; }
+  .pcard .meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; min-width: 0; }
+  .pcard .meta .em { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 0.375rem; color: var(--ink-2); font-size: var(--fs-sm); }
+  .pcard .meta .em span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pcard .meta .em svg.i { width: 0.9375rem; height: 0.9375rem; flex: none; color: var(--ink-3); }
+  .slogo { flex: none; width: 1.625rem; height: 1.625rem; border-radius: 0.4375rem; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-2); }
+  .slogo svg.i { width: 0.9375rem; height: 0.9375rem; }
+  .slogo .li { width: 1rem; height: 1rem; }
+  .slogo b { font-size: 0.72rem; font-weight: 800; color: #fff; width: 100%; height: 100%; border-radius: inherit; display: grid; place-items: center; }
+  .slogo .nk { background: #275df5; } .slogo .bh { background: #1769ff; font-size: 0.62rem; }
+  .pcard .foot { margin-top: 0.75rem; padding-top: 0.5rem; justify-content: space-between; gap: 0.5rem; }
+  .pcard .foot .when { color: var(--ink-3); font-size: var(--fs-xs); flex: 0 1 auto; }
+  .pcard .qa { position: static; opacity: 1; margin-left: auto; padding: 0; background: none; gap: 0; flex: none; }
+  .pcard.sel .qa { background: none; }
+  .pcard .qa button { width: 1.625rem; height: 1.625rem; color: var(--ink-3); }
+  .pcard .qa button:hover { background: var(--surface-2); color: var(--brand); }
+  .pcard .qa svg.i { width: 1rem; height: 1rem; }
+  .lane { flex: 1 0 19rem; }
+  .pcard .av { --s: 2.5rem; }
+  .pcard .ring { width: 2.5rem; height: 2.5rem; }
+  .pcard .ring::before { width: 1.9375rem; height: 1.9375rem; }
+  .pcard .who b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.25; }
+  .pcard .qa button { width: 1.75rem; height: 1.75rem; }
+  .pcard .qa svg.i { width: 1.125rem; height: 1.125rem; }
+  /* source is shown as the bare logo, no tile behind it; action icons a shade darker */
+  .slogo { background: none; width: 1.5rem; }
+  .slogo .li { width: 1.25rem; height: 1.25rem; }
+  .pcard .qa button { color: var(--ink-2); }
+  .pcard .qa button:hover { color: var(--brand); }
+  .pcard .qa button { color: var(--ink); }
+  .pcard .qa svg.i { stroke: currentColor; stroke-width: 7; }
+  .pcard .qa button:hover { color: var(--brand); }
+  /* ---- round 7: the details card fills itself ----
+     top row  : about + skills (skills pinned to the bottom) beside the overview tiles
+     bottom   : managers and interviewers flow as one wrapping line, full width */
+  .brief { display: grid; grid-template-columns: minmax(0, 1fr) 15rem; padding: 0; position: relative; margin-bottom: 1.25rem !important; overflow: hidden; }
+  .gl { margin: 0; display: inline-flex; align-items: center; gap: 0.4375rem; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 600; white-space: nowrap; }
+  .gl .cn { font-size: 0.62rem; letter-spacing: 0; background: var(--surface-2); color: var(--ink-2); padding: 0 0.4375rem; border-radius: 6.1875rem; font-weight: 700; line-height: 1.1rem; }
+  .dleft { min-width: 0; padding: 1rem 1.5rem 0.9375rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.875rem; }
+  .dabout { min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .dabout .jd { margin-top: 0.4375rem; -webkit-line-clamp: 3; font-size: var(--fs-md); line-height: 1.65; color: var(--ink); }
+  .dabout .jd.open { -webkit-line-clamp: unset; }
+  .skrow { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.875rem; }
+  .skrow .skl { gap: 0.4375rem; }
+  .skrow .skl .tag { font-size: var(--fs-sm); padding: 0.1875rem 0.75rem; }
+  .dstats { min-width: 0; padding: 0.875rem 1.125rem 1rem; border-left: 1px solid var(--line); background: color-mix(in srgb, var(--brand) 4%, var(--surface)); display: flex; flex-direction: column; gap: 0.5625rem; }
+  .dsh { display: flex; align-items: center; justify-content: space-between; margin: -0.125rem -0.375rem -0.125rem 0; }
+  .brief .bmore { position: static; width: 1.875rem; height: 1.875rem; }
+  .dtiles { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.5rem; flex: 1 1 auto; }
+  .dt { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 0.1875rem 0.625rem; padding: 0.4375rem 0.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: 0.75rem; min-width: 0; transition: border-color 0.15s, transform 0.15s; }
+  .dt:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); transform: translateY(-1px); }
+  .dt .k { font-size: var(--fs-xs); color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .dt b { font-size: 1.55rem; font-weight: 650; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .dt small { font-size: var(--fs-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dt .tx { display: flex; flex-direction: column; min-width: 0; flex: 1 1 0; line-height: 1.25; }
+  .dt .bar { flex: 0 0 100%; height: 0.3125rem; margin: 0.125rem 0 0; }
+  .dband { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding-top: 0.8125rem; border-top: 1px solid var(--line); }
+  .dband .gs { display: inline-flex; align-items: center; gap: 0.625rem; flex-wrap: nowrap; margin-right: 0.0625rem; }
+  .dband .gsep { display: none; }
+  .dband .gs ~ .gs { margin-left: 1rem; }
+  .dband .pp { padding: 0.1875rem 0.75rem 0.1875rem 0.1875rem; font-size: var(--fs-sm); }
+  .dband .pp .av { --s: 1.625rem; }
+  @media (max-width: 1000px) {
+    .brief { grid-template-columns: minmax(0, 1fr); }
+    .dstats { border-left: 0; border-top: 1px solid var(--line); }
+    .dtiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 620px) { .dtiles { grid-template-columns: 1fr 1fr; } .dband .gsep { display: none; } }
+
+  /* ---- round 8: no text labels; skills (5 + n) and round overlapping avatars (5 + n) share one row ---- */
+  .dabout .jd { -webkit-line-clamp: 4; }
+  .drow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem 1.5rem; padding-top: 0.8125rem; border-top: 1px solid var(--line); }
+  .drow .skl { flex: 1 1 14rem; min-width: 0; gap: 0.375rem; }
+  .drow .skl .tag { font-size: var(--fs-sm); padding: 0.1875rem 0.75rem; }
+  .drow .skl .tag.more { background: var(--surface-2); color: var(--ink-2); cursor: default; }
+  .dpeople { display: flex; align-items: center; gap: 1.25rem; margin-left: auto; flex: none; }
+  .pg { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .pgi { position: relative; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); background: var(--surface-2); flex: none; }
+  .pgi svg.i { width: 0.8125rem; height: 0.8125rem; }
+  .pstack { display: inline-flex; align-items: center; padding-left: 0.5rem; }
+  .pav { --s: 1.9375rem; position: relative; margin-left: -0.5rem; border: 2px solid var(--surface); box-sizing: content-box; width: var(--s); height: var(--s); overflow: visible; cursor: default; transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s; outline-offset: 2px; }
+  .pav img, .pav svg { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+  .pav.more { background: var(--surface-2) !important; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 700; }
+  /* on hover the avatar lifts above its neighbours and a small name tag appears over it */
+  .pav:hover, .pav:focus-visible { transform: translateY(-0.3125rem) scale(1.1); z-index: 5; box-shadow: 0 0.375rem 0.75rem color-mix(in srgb, var(--ink) 22%, transparent); }
+  .pav::after, .pgi::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 0.5rem); transform: translate(-50%, 0.25rem); background: var(--ink); color: var(--bg); font-size: var(--fs-xs); font-weight: 500; line-height: 1.3; padding: 0.3125rem 0.5625rem; border-radius: 0.4375rem; white-space: nowrap; max-width: 18rem; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.15s, transform 0.15s, visibility 0s linear 0.15s; z-index: 30; letter-spacing: 0; text-transform: none; }
+  .pav:hover::after, .pav:focus-visible::after, .pgi:hover::after { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition-delay: 0s; }
+  .pav.more::after { white-space: normal; width: max-content; }
+  @media (max-width: 1000px) { .dpeople { margin-left: 0; } }
+
+  /* ---- round 9: the right side is only the vacancies ---- */
+  .dstats { position: relative; justify-content: center; padding: 1rem 1.5rem; }
+  .dstats .bmore { position: absolute; top: 0.5rem; right: 0.5rem; width: 1.875rem; height: 1.875rem; }
+  .dvac { display: flex; flex-direction: column; gap: 0.3125rem; }
+  .dvac .k { font-size: var(--fs-xs); color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .dvac b { font-size: 2.6rem; font-weight: 650; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .dvac .bar { height: 0.4375rem; margin: 0.25rem 0 0.125rem; }
+  .dvac small { font-size: var(--fs-sm); color: var(--ink-2); }
+  .dvac small strong { color: var(--ink); font-weight: 650; }
+  @media (max-width: 1000px) { .dstats { border-left: 0; border-top: 1px solid var(--line); } .dvac { max-width: 20rem; } }
+
+  /* ---- round 10: one column. The vacancies progress bar takes the place of the divider line ---- */
+  .brief { grid-template-columns: minmax(0, 1fr); }
+  .brief .bmore { position: absolute; top: 0.625rem; right: 0.625rem; width: 1.875rem; height: 1.875rem; z-index: 2; }
+  .dabout { padding-right: 2.25rem; }
+  .dvbar { display: flex; align-items: center; gap: 0.75rem; font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .dvbar b { color: var(--ink); font-size: var(--fs-sm); font-weight: 650; }
+  .dvbar .bar { flex: 1 1 auto; height: 0.4375rem; }
+  .dvbar .l, .dvbar .r { white-space: nowrap; }
+  .drow { border-top: 0; padding-top: 0; }
+  @media (max-width: 1000px) { .brief { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---- round 11: managers on the left, skills in the centre, interviewers on the right ---- */
+  .drow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.625rem 1.5rem; }
+  .drow .skl { flex: none; justify-content: center; }
+  .drow .pg:last-child { justify-self: end; }
+  @media (max-width: 900px) { .drow { grid-template-columns: minmax(0, 1fr); } .drow .skl { justify-content: flex-start; } .drow .pg:last-child { justify-self: start; } }
+
+  /* ---- round 12: tooltips are never clipped ---- */
+  .brief { overflow: visible !important; }
+  /* first group: tooltips open toward the right (inside the card); last group: toward the left */
+  .drow .pg:first-child .pgi::after, .drow .pg:first-child .pav:first-of-type::after { left: 0; transform: translate(0, 0.25rem); }
+  .drow .pg:first-child .pgi:hover::after, .drow .pg:first-child .pav:first-of-type:hover::after, .drow .pg:first-child .pav:first-of-type:focus-visible::after { transform: translate(0, 0); }
+  .drow .pg:last-child .pav::after { left: auto; right: 0; transform: translate(0, 0.25rem); }
+  .drow .pg:last-child .pav:hover::after, .drow .pg:last-child .pav:focus-visible::after { transform: translate(0, 0); }
+  .pav::after, .pgi::after { z-index: 60; box-shadow: 0 0.25rem 0.75rem color-mix(in srgb, var(--ink) 25%, transparent); }
+
+  /* ---- round 13: two lines; "Read more" sits at the right end of the second line, only if the text is cut off ---- */
+  .jdw { position: relative; margin-top: 0.4375rem; }
+  .dabout .jdw .jd { margin-top: 0; -webkit-line-clamp: 2; }
+  .dabout .jdw .jd.open { -webkit-line-clamp: unset; }
+  .jdw .jdmore { position: absolute; right: 0; bottom: 0; margin: 0; padding: 0 0 0 2.5rem; border: 0; font-size: var(--fs-md); line-height: 1.65; font-weight: 600; color: var(--brand); background: linear-gradient(90deg, transparent, var(--surface) 2rem); cursor: pointer; }
+  .jdw .jdmore:hover { text-decoration: underline; }
+  .jdw.open .jdmore { position: static; display: block; margin-top: 0.1875rem; padding: 0; background: none; font-size: var(--fs-sm); }
+
+  /* ---- round 14: a closed recruitment gets a ribbon hanging from the top centre of the card ---- */
+  .cribbon { position: absolute; top: -1px; left: 50%; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 0.4375rem; padding: 0.375rem 1.375rem 0.8125rem; background: var(--warn); color: #fff; font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%); animation: ribbonDrop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; pointer-events: none; }
+  .cribbon svg.i { width: 0.9375rem; height: 0.9375rem; }
+  @keyframes ribbonDrop { from { transform: translate(-50%, -0.75rem); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+  /* ---- round 15: one small gap, used above the details card and between the card and the board ---- */
+  .pv { --pgap: 0.75rem; }
+  .ptop { margin-bottom: var(--pgap) !important; }
+  .brief { top: auto !important; margin-bottom: var(--pgap) !important; }
+
+  /* ---- round 16: stage header = count, title, and an always-visible gear on the right ---- */
+  .lane-head { gap: 0.5625rem; }
+  .lane-head b { flex: 1 1 auto; min-width: 0; }
+  .lane-head .gear { opacity: 1 !important; margin-left: auto; flex: none; width: 1.75rem; height: 1.75rem; color: var(--ink); background: color-mix(in srgb, var(--sc, var(--ink-3)) 10%, var(--surface)); }
+  .lane-head .gear:hover, .lane-head .gear.open { background: color-mix(in srgb, var(--sc, var(--ink-3)) 18%, var(--surface)); color: var(--ink); }
+  .lane-head .gear svg.i { width: 1.0625rem; height: 1.0625rem; transition: transform 0.35s ease; }
+  .lane-head .gear:hover svg.i, .lane-head .gear.open svg.i { transform: rotate(60deg); }
+
+  /* ---- round 17: the stage header is its own rounded bar; the count is plain text in brackets ---- */
+  .lane-head { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--sc, var(--ink-3)); border-radius: 0.75rem; padding: 0.375rem 0.375rem 0.375rem 0.75rem; margin: 0 0 0.625rem; box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent); min-height: 2.5rem; }
+  .lane-head .n { background: none; padding: 0; border-radius: 0; color: var(--ink-2); font-size: var(--fs-md); font-weight: 650; }
+  .lane-head .n::before { content: "("; }
+  .lane-head .n::after { content: ")"; }
+  .lane.mini .lane-head { padding: 0.625rem 0; min-height: 0; border-top-width: 3px; }
+
+  /* ---- round 18: AI score is a ribbon in the top-right corner of the candidate card ---- */
+  .pcard .top { padding-right: 2.875rem; }
+  .airib { position: absolute; top: -1px; right: 0.875rem; width: 2.375rem; padding: 0.3125rem 0 0.8125rem; display: flex; flex-direction: column; align-items: center; line-height: 1.05; color: #fff; background: var(--brand); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); z-index: 2; cursor: default; }
+  .airib small { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em; opacity: 0.9; }
+  .airib b { font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .airib.ai-hi { background: var(--good); }
+  .airib.ai-mid { background: var(--brand); }
+  .airib.ai-lo { background: var(--warn); }
+
+  /* ---- round 19: the AI ribbon wraps around the card's right edge, with a small fold underneath. Same colours, new shape. ---- */
+  .lane-cards { padding-right: 0.5rem; margin-right: -0.5rem; }
+  .pcard .top { padding-right: 3.5rem; }
+  .airib { top: 0.75rem; right: -0.375rem; width: auto; flex-direction: row; align-items: baseline; gap: 0.3125rem; padding: 0.25rem 0.6875rem 0.25rem 0.75rem; clip-path: none; border-radius: 0.375rem 0 0 0.375rem; box-shadow: 0 0.125rem 0.375rem color-mix(in srgb, #000 18%, transparent); line-height: 1.2; }
+  .airib small { font-size: 0.6rem; letter-spacing: 0.08em; opacity: 0.92; }
+  .airib b { font-size: 0.95rem; letter-spacing: -0.01em; }
+  .airib::after { content: ""; position: absolute; right: 0; top: 100%; width: 0; height: 0; border-top: 0.375rem solid var(--fold, #0b5a41); border-right: 0.375rem solid transparent; }
+  .airib.ai-hi { --fold: color-mix(in srgb, var(--good) 55%, #000); }
+  .airib.ai-mid { --fold: color-mix(in srgb, var(--brand) 55%, #000); }
+  .airib.ai-lo { --fold: color-mix(in srgb, var(--warn) 55%, #000); }
+
+  /* ---- round 20: ribbon text is just the percentage ---- */
+  .airib { padding: 0.25rem 0.6875rem 0.25rem 0.75rem; }
+  .airib b { font-size: 0.9rem; letter-spacing: 0; }
+  .airib.ai-none { background: var(--ink-3); --fold: color-mix(in srgb, var(--ink-3) 55%, #000); }
+  .airib.ai-none { min-width: 2.375rem; text-align: center; }
+  .airib.ai-none b { font-size: 0.9rem; font-weight: 600; }
+
+  /* ---- round 21: bigger action buttons on the candidate card, no hover background ---- */
+  .pcard .qa button { width: 2.125rem; height: 2.125rem; padding: 0; flex: none; border-radius: 0.5rem; background: none !important; transition: color 0.15s, transform 0.15s; }
+  .pcard .qa button:hover, .pcard .qa button:focus-visible { background: none !important; color: var(--brand); transform: scale(1.12); }
+  .pcard .qa svg.i { width: 1.375rem; height: 1.375rem; }
+  .pcard .foot { min-height: 2.125rem; }
+</style>
+</head>
+<body data-module="recruitment" data-page="pipeline" data-title="Recruitment Pipeline" data-nohead="1">
+<main id="page">
+  <div class="pv" id="pv">
+    <header class="ptop" id="ptop"><div class="pt" id="pt"></div><div class="pacts" id="tools"></div></header>
+    <div class="pgrid">
+      <aside class="card brief" id="rhead" aria-label="Recruitment details"></aside>
+      <div class="pmain"><div id="out"></div></div>
+    </div>
+  </div>
+  <div class="bulk" id="bulk" hidden></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  var C = DEMO.candidates;
+  ICONS.chat = '<path d="M128,26A102,102,0,0,0,37.6,177.17L26.6,210a14,14,0,0,0,17.4,17.4l32.8-11A102,102,0,1,0,128,26Zm0,192a89.93,89.93,0,0,1-45.1-12.1,6,6,0,0,0-5-.5l-35.8,12a2,2,0,0,1-2.5-2.5l12-35.8a6,6,0,0,0-.5-5A90,90,0,1,1,128,218Z"/>';
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function liIcon() { return '<svg class="li" viewBox="0 0 24 24" role="img" aria-label="Also posted on LinkedIn"><title>Also posted on LinkedIn</title><path fill="#0a66c2" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'; }
+
+  /* ---------- state ---------- */
+  var jobId = +(qparam("job") || 1);
+  var S = { min: (function () { try { return localStorage.getItem("ariel-pipe2-min") !== "0"; } catch (e) { return true; } })(), view: "board", q: "", rate: 0, ai: 0, src: "all", sel: {}, rej: false, more: {}, closedStage: {} };
+  var STAGES = {}, NOTES = { 1: [{ by: "Sonali Thakur", at: "2026-10-05", text: "Strong on system design. Ask about Celery in the next round." }], 3: [{ by: "Admin User", at: "2026-10-08", text: "Expecting 22 LPA. Offer needs approval." }] };
+  var CAN_REASONS = ["Not a good fit", "Salary expectation", "Notice period too long", "Failed the test", "Better candidate selected", "Candidate withdrew", "Other"];
+  var MAILS = {
+    invite: ["Interview invitation", "Hi {name},\n\nWe liked your profile and would like to invite you for an interview for the {job} role. Please reply with a time that suits you.\n\nRegards,\nAriel Software Solutions"],
+    offer: ["Offer letter (LOI)", "Hi {name},\n\nWe are happy to offer you the {job} position. Please find the letter of intent attached and reply within 3 days.\n\nRegards,\nAriel Software Solutions"],
+    docs: ["Request documents", "Hi {name},\n\nTo move ahead with your application for {job}, please share your ID proof, last three payslips and relieving letter.\n\nThank you,\nAriel Software Solutions"],
+    reject: ["Application update", "Hi {name},\n\nThank you for your interest in the {job} role. After careful review we will not be moving forward right now. We wish you the best.\n\nRegards,\nAriel Software Solutions"],
+    custom: ["Custom message", ""]
+  };
+  C.forEach(function (c) {
+    if (!c.hist) { c.hist = [{ t: "Applied through " + c.source, at: c.applied }]; }
+    if (c.stage === "cancelled" && !c.reason) { c.reason = "Not a good fit"; }
+  });
+  DEMO.candidates.filter(function (c) { return c.id === 3; })[0].mail = "Offer letter sent";
+  DEMO.candidates.filter(function (c) { return c.id === 1; })[0].mail = "Interview invitation sent";
+
+  var job = function () { return DEMO.job(jobId); };
+  var isClosed = function () { return job().status === "closed"; };
+  function stagesOf(jid) {
+    if (!STAGES[jid]) {
+      var set = DEMO.stageSetup.filter(function (x) { return x.job === jid; })[0], j = DEMO.job(jid);
+      STAGES[jid] = set ? set.stages.map(function (s) { return { key: s[1], name: s[0], type: s[1], mgr: s[2].split(", ") }; })
+        : DEMO.stages.map(function (s) { return { key: s.id, name: s.label, type: s.id, mgr: [s.id === "hired" || s.id === "cancelled" ? "Admin User" : j.managers[0]] }; });
+    }
+    return STAGES[jid];
+  }
+  var stages = function () { return stagesOf(jobId); };
+  var laneStages = function () { return stages().filter(function (s) { return s.type !== "cancelled"; }); };
+  var rejStage = function () { return stages().filter(function (s) { return s.type === "cancelled"; })[0] || { key: "cancelled", name: "Rejected", type: "cancelled", mgr: ["Admin User"] }; };
+  var stageByKey = function (k) { return stages().filter(function (s) { return s.key === k; })[0]; };
+  var color = function (st) { return (DEMO.stage(st.type) || DEMO.stage("applied")).color; };
+  function keyOf(c) { return stageByKey(c.stage) ? c.stage : laneStages()[0].key; }
+  var typeOf = function (c) { return (stageByKey(c.stage) || laneStages()[0]).type; };
+  var jobCands = function () { return C.filter(function (c) { return c.job === jobId; }); };
+  function visible(c) {
+    var hay = (c.name + " " + c.email + " " + c.skills.join(" ")).toLowerCase();
+    return (!S.q || hay.indexOf(S.q) >= 0) && c.rating >= S.rate && c.ai >= S.ai && (S.src === "all" || c.source === S.src);
+  }
+  function syncFilled() { var j = job(); j.filled = jobCands().filter(function (c) { return typeOf(c) === "hired"; }).length; }
+  function nextInterview(c) { return DEMO.interviews.filter(function (i) { return i.cand === c.id && i.status === "Scheduled"; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; })[0]; }
+  /* flip to the previous (-1) or next (+1) recruitment, sliding the content that way */
+  function flip(dir) {
+    var n = DEMO.jobs.length, i = DEMO.jobs.indexOf(job()); jobId = DEMO.jobs[(i + dir + n) % n].id;
+    S.sel = {}; S.more = {}; S.jdOpen = false; setUrl(); redraw();
+    var cls = dir > 0 ? "slide-r" : "slide-l";
+    ["#pt", "#rhead", "#out"].forEach(function (q) { var el = $(q); el.classList.remove("slide-r", "slide-l"); void el.offsetWidth; el.classList.add(cls); });
+    setTimeout(function () { ["#pt", "#rhead", "#out"].forEach(function (q) { $(q).classList.remove("slide-r", "slide-l"); }); }, 450);
+  }
+  function setUrl() { try { history.replaceState(null, "", "?job=" + jobId); } catch (e) {} }
+
+  /* ---------- popover menu ---------- */
+  var menuEl = null, menuAnchor = null;
+  function closeMenu() { if (menuEl) { menuEl.remove(); menuEl = null; } if (menuAnchor) { menuAnchor.classList.remove("open"); menuAnchor = null; } }
+  function openMenu(anchor, html, onPick, minW) {
+    if (menuAnchor === anchor) { closeMenu(); return null; }
+    closeMenu();
+    var r = anchor.getBoundingClientRect(), m = document.createElement("div");
+    m.className = "pop"; m.setAttribute("role", "menu"); m.innerHTML = html; document.body.appendChild(m);
+    if (minW) { m.style.minWidth = minW + "px"; }
+    var mw = m.offsetWidth, mh = m.offsetHeight;
+    m.style.left = Math.max(12, Math.min(window.innerWidth - mw - 12, r.left)) + "px";
+    m.style.top = (r.bottom + 6 + mh > window.innerHeight ? Math.max(12, r.top - mh - 6) : r.bottom + 6) + "px";
+    anchor.classList.add("open"); menuEl = m; menuAnchor = anchor;
+    m.addEventListener("click", function (e) { var it = e.target.closest("[data-pick]"); if (it && onPick) { var v = it.dataset.pick; closeMenu(); onPick(v); } });
+    return m;
+  }
+  document.addEventListener("click", function (e) { if (menuEl && !e.target.closest(".pop") && !(menuAnchor && menuAnchor.contains(e.target))) { closeMenu(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeMenu(); } });
+
+  /* ---------- 1. summary header ---------- */
+  /* people on this recruitment: managers, and everyone who sits on an interview */
+  function interviewerList() {
+    var ids = jobCands().map(function (c) { return c.id; }), m = {};
+    DEMO.interviews.forEach(function (i) { if (ids.indexOf(i.cand) >= 0) { i.who.forEach(function (n) { m[n] = (m[n] || 0) + 1; }); } });
+    stages().forEach(function (s) { if (s.type === "interview" || s.type === "test") { s.mgr.forEach(function (n) { if (!(n in m)) { m[n] = 0; } }); } });
+    return Object.keys(m).map(function (n) { return { n: n, c: m[n] }; }).sort(function (a, b) { return b.c - a.c; });
+  }
+  function pp(n, extra) { return '<span class="pp">' + avatar(n, "xs") + esc(n) + (extra ? " <small>" + extra + "</small>" : "") + "</span>"; }
+  function drawHead() {
+    var j = job(), cs = jobCands(), live = cs.filter(function (c) { return typeOf(c) !== "cancelled"; });
+    var left = Math.round((new Date(j.end) - new Date(DEMO.today)) / 864e5), soon = j.status === "open" && left <= 14;
+    var avg = live.length ? Math.round(live.reduce(function (a, c) { return a + c.ai; }, 0) / live.length) : 0;
+    var by = function (t) { return cs.filter(function (c) { return typeOf(c) === t; }).length; };
+    var pct = Math.min(100, j.filled / j.openings * 100), ivw = interviewerList(), vac = Math.max(0, j.openings - j.filled);
+    var ln = j.linkedin ? '<span class="lipill" title="This opening is also posted on LinkedIn">' + liIcon() + "Posted on LinkedIn</span>" : '<button class="lipill off" id="liPost" title="Post this opening on LinkedIn">' + liIcon() + "Not on LinkedIn · Post</button>";
+    var jd = j.desc || "No description added yet.";
+    $("#pv").classList.toggle("min", S.min); document.body.classList.toggle("pmin", S.min);
+    var cdate = '<span class="cdate' + (soon ? " soon" : "") + '">' + icon("calendar") + (j.status === "closed" ? "Closed " + fmtDate(j.end) : "Closes " + fmtDate(j.end) + (left >= 0 ? " · " + left + " days left" : " · past")) + "</span>";
+    $("#pt").innerHTML =
+      '<div class="pt-row"><h1 class="ptitle">' + esc(j.title) + '</h1><span class="cdate pos">' + icon("building") + esc(j.dept) + "</span>" + ln + cdate + "</div>";
+    var ids = cs.map(function (c) { return c.id; });
+    var nxt = DEMO.interviews.filter(function (i) { return i.status === "Scheduled" && ids.indexOf(i.cand) >= 0; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; })[0];
+    /* overlapping round avatars: first five, then "+n". A photo is used when DEMO.photos has one, otherwise initials. */
+    var MAXP = 5;
+    var pav = function (name, tip) {
+      var f = avatarFace(name);
+      return '<span class="av pav" tabindex="0" data-tip="' + esc(tip || name) + '" style="background:' + f.bg + '">' + f.html + "</span>";
+    };
+    var pstack = function (list, ico, label) {
+      var shown = list.slice(0, MAXP), rest = list.slice(MAXP);
+      return '<span class="pg" role="group" aria-label="' + label + " (" + list.length + ')"><span class="pgi" data-tip="' + label + " · " + list.length + '">' + icon(ico, "sm") + "</span>" +
+        (list.length ? '<span class="pstack">' + shown.map(function (x) { return pav(x.n, x.tip); }).join("") + (rest.length ? '<span class="av pav more" tabindex="0" data-tip="' + esc(rest.map(function (x) { return x.n; }).join(", ")) + '">+' + rest.length + "</span>" : "") + "</span>" : '<span class="faint" style="font-size:var(--fs-xs)">none yet</span>') + "</span>";
+    };
+    var mgr = j.managers.map(function (m) { return { n: m, tip: m }; });
+    var ivc = ivw.map(function (x) { return { n: x.n, tip: x.n + (x.c ? " · " + x.c + (x.c === 1 ? " interview" : " interviews") : "") }; });
+    var skShown = j.skills.slice(0, 5), skRest = j.skills.slice(5);
+    $("#rhead").innerHTML =
+      '<div class="dleft"><section class="dabout"><div><h5 class="gl">About the role</h5><div class="jdw" id="jdw"><div class="jd" id="jd">' + esc(jd) + '</div><button class="jdmore" id="jdMore" hidden>Read more</button></div></div>' +
+      "</section>" +
+      '<div class="dvbar" title="' + j.filled + " of " + j.openings + ' vacancies filled"><span class="l"><b>' + j.filled + "</b> filled</span><div class=\"bar" + (pct >= 100 ? " good" : "") + '"><i style="width:' + pct + '%"></i></div><span class="r"><b>' + j.openings + "</b> vacanc" + (j.openings === 1 ? "y" : "ies") + "</span></div>" +
+      '<div class="drow">' + pstack(mgr, "shield", "Recruitment managers") + '<div class="skl" aria-label="Skills">' + (skShown.map(function (k) { return '<span class="tag">' + esc(k) + "</span>"; }).join("") || '<span class="faint">No skills added</span>') + (skRest.length ? '<span class="tag more" title="' + esc(skRest.join(", ")) + '">+' + skRest.length + "</span>" : "") + "</div>" +
+      pstack(ivc, "users", "Interviewers") + "</div></div>" +
+      '<button class="xbtn bmore" id="jobMore" aria-label="Recruitment options" aria-haspopup="menu">' + icon("dotsv") + "</button>" +
+      (isClosed() ? '<div class="cribbon" role="status">' + icon("flag", "sm") + "Closed</div>" : "");
+    watchJd();
+  }
+  /* "Read more" shows only when the two-line text is actually cut off. Re-checked whenever the text changes size (resize, details switched back on). */
+  var jdWatch = null;
+  function fitJd() {
+    var jd = $("#jd"), mb = $("#jdMore"); if (!jd || !mb) { return; }
+    if (jd.classList.contains("open")) { mb.hidden = false; return; }
+    /* line-clamp hides the extra lines from scrollHeight, so lift the clamp for a moment and compare the natural height */
+    var prev = jd.style.webkitLineClamp; jd.style.webkitLineClamp = "unset"; var full = jd.scrollHeight; jd.style.webkitLineClamp = prev;
+    mb.hidden = !(full > jd.clientHeight + 1);
+  }
+  function watchJd() {
+    if (jdWatch) { jdWatch.disconnect(); }
+    var jd = $("#jd"); if (!jd) { return; }
+    fitJd();
+    if (window.ResizeObserver) { jdWatch = new ResizeObserver(fitJd); jdWatch.observe(jd); }
+  }
+
+  /* ---------- 2. toolbar ---------- */
+  function activeFilters() { return (S.rate ? 1 : 0) + (S.ai ? 1 : 0) + (S.src !== "all" ? 1 : 0); }
+  function drawTools() {
+    var n = activeFilters(), idx = DEMO.jobs.indexOf(job()), cnt = DEMO.jobs.length, prev = DEMO.jobs[(idx - 1 + cnt) % cnt], next = DEMO.jobs[(idx + 1) % cnt];
+    $("#tools").innerHTML =
+      '<div class="flip" role="group" aria-label="Switch pipeline"><button id="prevJob" aria-label="Previous: ' + esc(prev.title) + '" title="Previous: ' + esc(prev.title) + '">' + icon("left") + '</button><span class="cnt">' + (idx + 1) + " / " + cnt + '</span><button id="nextJob" aria-label="Next: ' + esc(next.title) + '" title="Next: ' + esc(next.title) + '">' + icon("right") + "</button></div>" +
+      '<button class="xbtn' + (S.min ? "" : " on") + '" id="minBtn" aria-label="Show or hide the recruitment details">' + icon("sidebar") + '<span class="xl">' + (S.min ? "Show details" : "Hide details") + "</span></button>";
+    fitX($("#tools"));
+  }
+
+  /* ---------- 3. the board ---------- */
+  function aiPill(n) { return '<span class="aip ' + (n >= 80 ? "hi" : n >= 70 ? "mid" : "lo") + '" title="AI match">' + icon("spark", "sm") + n + "</span>"; }
+  /* small logo for where the candidate came from */
+  function srcLogo(src) {
+    var k = String(src || "").toLowerCase(), inner;
+    if (k === "linkedin") { inner = liIcon(); }
+    else if (k === "indeed") { inner = '<svg class="li" viewBox="0 0 24 24" role="img" aria-label="Indeed"><rect width="24" height="24" rx="5" fill="#2164f3"/><circle cx="12" cy="6.6" r="1.9" fill="#fff"/><path d="M10.3 10.2h3.4V19h-3.4z" fill="#fff"/></svg>'; }
+    else if (k === "naukri") { inner = '<b class="nk">N</b>'; }
+    else if (k === "behance") { inner = '<b class="bh">Be</b>'; }
+    else if (k === "website") { inner = icon("globe", "sm"); }
+    else if (k === "referral") { inner = icon("userplus", "sm"); }
+    else if (k === "email") { inner = icon("mail", "sm"); }
+    else { inner = icon("file", "sm"); }
+    return '<span class="slogo" title="Source: ' + esc(src) + '">' + inner + "</span>";
+  }
+  function cardHtml(c) {
+    var st = typeOf(c), picked = !!S.sel[c.id];
+    return '<div class="card kcard pcard' + (picked ? " sel" : "") + '" draggable="true" data-id="' + c.id + '" tabindex="0">' +
+      '<label class="ck"><input type="checkbox" data-sel="' + c.id + '"' + (picked ? " checked" : "") + ' aria-label="Select ' + esc(c.name) + '"></label>' +
+      '<div class="top">' + avatar(c.name) + '<div class="who"><b>' + esc(c.name) + "</b>" + (st === "hired" ? '<span class="hiredbadge">Hired</span>' : "") + "</div></div>" + airib(c.ai) +
+      '<div class="meta"><span class="em" title="' + esc(c.email) + '">' + icon("mail", "sm") + "<span>" + esc(c.email) + "</span></span>" + srcLogo(c.source) + "</div>" +
+      (st === "cancelled" ? '<div class="rj">' + esc(c.reason || "Rejected") + "</div>" : "") +
+      '<div class="foot"><span class="when" title="Applied on ' + fmtDate(c.applied) + '">' + shortDate(c.applied) + '</span><span class="qa">' +
+      '<button data-q="sched" title="Schedule interview" aria-label="Schedule interview">' + icon("calendar") + '</button>' +
+      '<button data-q="loi" title="Send LOI" aria-label="Send LOI">' + icon("send") + '</button>' +
+      '<button data-q="docs" title="Document request" aria-label="Document request">' + icon("file") + '</button>' +
+      '<button data-q="status" title="Update status" aria-label="Update status">' + icon("updown") + '</button>' +
+      '<button data-q="note" title="Chat &amp; notes" aria-label="Chat and notes">' + icon("chat") + "</button></span></div></div>";
+  }
+  /* AI match as a small ribbon hanging from the top-right corner of the card: "AI" over the number */
+  function airib(n) {
+    if (!n) { return '<span class="airib ai-none" title="No AI match score yet" aria-label="Not scored"><b>&ndash;</b></span>'; }
+    return '<span class="airib ' + (n >= 80 ? "ai-hi" : n >= 70 ? "ai-mid" : "ai-lo") + '" title="AI resume match: ' + n + ' of 100 for this job" aria-label="AI resume match ' + n + ' percent"><b>' + n + "%</b></span>";
+  }
+  function gearIcon() { return '<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'; }
+  function laneHtml(st, i, isRej) {
+    var all = jobCands().filter(function (c) { return keyOf(c) === st.key && (isRej ? typeOf(c) === "cancelled" : true); });
+    if (isRej) { all = jobCands().filter(function (c) { return typeOf(c) === "cancelled"; }); }
+    var items = all.filter(visible), lim = S.more[st.key] || 6, mini = isRej && !S.rej;
+    return '<section class="lane' + (isRej ? " rej" : "") + (mini ? " mini" : "") + '" style="--sc:' + color(st) + '" data-stage="' + st.key + '"><div class="lane-head" ' + (isRej ? 'data-togrej="1"' : 'draggable="true" data-head="' + st.key + '"') + '><span class="n">' + all.length + "</span><b>" + esc(isRej ? "Rejected" : st.name) + "</b>" +
+      (isRej ? "" : '<button class="icon-btn gear" data-smenu="' + st.key + '" title="Stage actions" aria-label="Actions for ' + esc(st.name) + '" aria-haspopup="menu">' + gearIcon() + "</button>") + "</div>" +
+      '<div class="lane-cards">' + items.slice(0, lim).map(cardHtml).join("") + (items.length ? "" : '<div class="lane-empty">' + (all.length ? "No match for the filters" : isRej ? "Drop here to reject" : "Drop candidates here") + "</div>") + "</div>" +
+      (items.length > lim ? '<button class="lane-more" data-more="' + st.key + '">Show ' + Math.min(6, items.length - lim) + " more of " + (items.length - lim) + "</button>" : "") + "</section>";
+  }
+  function listHtml() {
+    var rows = jobCands().filter(visible).filter(function (c) { return S.rej || typeOf(c) !== "cancelled"; }).sort(function (a, b) { return stages().map(function (s) { return s.key; }).indexOf(keyOf(a)) - stages().map(function (s) { return s.key; }).indexOf(keyOf(b)); });
+    if (!rows.length) { return '<div class="card empty">No candidates match.</div>'; }
+    return '<div class="card flush lv"><div class="table-wrap"><table class="tbl"><thead><tr><th style="width:2.25rem"><input type="checkbox" id="allSel" aria-label="Select all"></th><th>Candidate</th><th>Stage</th><th>Rating</th><th>AI match</th><th>Source</th><th>Next</th><th></th></tr></thead><tbody>' + rows.map(function (c) {
+      var iv = nextInterview(c);
+      return '<tr data-id="' + c.id + '"><td><input type="checkbox" data-sel="' + c.id + '"' + (S.sel[c.id] ? " checked" : "") + ' aria-label="Select ' + esc(c.name) + '"></td><td>' + person(c.name, c.email) + '</td><td><select class="select" data-stsel="' + c.id + '" aria-label="Stage of ' + esc(c.name) + '">' + stages().map(function (s) { return '<option value="' + s.key + '"' + (s.key === keyOf(c) ? " selected" : "") + ">" + esc(s.name) + "</option>"; }).join("") + "</select></td><td>" + (c.rating ? stars(c.rating) : '<span class="faint">Not rated</span>') + "</td><td>" + ring(c.ai) + "</td><td>" + esc(c.source) + "</td><td>" + (iv ? (iv.date === DEMO.today ? "Today " : shortDate(iv.date) + " ") + iv.time : '<span class="faint">' + ago(c.applied) + "</span>") + '</td><td class="act"><button class="btn sm icon ghost" data-q="mail" aria-label="Send mail">' + icon("mail", "sm") + '</button><button class="btn sm icon ghost" data-q="more" aria-label="More">' + icon("dotsv", "sm") + "</button></td></tr>";
+    }).join("") + "</tbody></table></div></div>";
+  }
+  function drawOut() {
+    if (!jobCands().length) {
+      $("#out").innerHTML = '<div class="card empty">' + icon("users", "lg") + '<p style="margin:0.5rem 0 1rem">No candidates in this recruitment yet.</p><button class="btn primary" data-empty="add">' + icon("plus") + 'Add candidate</button> <button class="btn" data-empty="up">' + icon("upload") + "Upload resumes</button></div>";
+      return;
+    }
+    if (S.view === "list") { $("#out").innerHTML = listHtml(); return; }
+    var keep = $("#board") ? $("#board").scrollLeft : 0;
+    $("#out").innerHTML = '<div class="board" id="board">' + laneStages().map(function (st, i) { return laneHtml(st, i, false); }).join("") + laneHtml(rejStage(), 99, true) + "</div>";
+    $("#board").scrollLeft = keep; fitBoard();
+  }
+  /* the board is as tall as what is left of the screen, so the lanes run to the bottom and the thin scroll bar sits at the bottom edge */
+  function fitBoard() {
+    var b = $("#board"); if (!b) { return; }
+    var n = b.querySelectorAll(".lane:not(.mini)").length;
+    b.style.setProperty("--cols", Math.max(1, Math.min(n, Math.floor(b.clientWidth / 270))));
+    b.style.height = Math.max(320, window.innerHeight - (b.getBoundingClientRect().top + window.pageYOffset) - 20) + "px";
+  }
+  window.addEventListener("resize", fitBoard);
+  function drawBulk() {
+    var ids = Object.keys(S.sel), b = $("#bulk"); b.hidden = !ids.length;
+    b.innerHTML = '<b>' + ids.length + ' selected</b><button class="btn sm" data-b="move">Move to ' + icon("down", "sm") + '</button><button class="btn sm" data-b="mail">' + icon("mail", "sm") + 'Send mail</button><button class="btn sm" data-b="zone">' + icon("spark", "sm") + 'Skill zone</button><button class="btn sm" data-b="reject">' + icon("x", "sm") + 'Reject</button><button class="btn sm icon" data-b="clear" aria-label="Clear selection">' + icon("x", "sm") + "</button>";
+  }
+  function redraw() { syncFilled(); drawHead(); drawTools(); drawOut(); drawBulk(); }
+  function refreshBody() { drawHead(); drawOut(); drawBulk(); }
+
+  /* ---------- moving candidates ---------- */
+  function guardClosed() { if (isClosed()) { toast("This recruitment is closed. Reopen it first."); return true; } return false; }
+  function moveTo(ids, key, extra) {
+    var st = stageByKey(key) || (key === rejStage().key ? rejStage() : null); if (!st) { return; }
+    ids.forEach(function (id) { var c = DEMO.cand(id); c.stage = key; c.hist.push({ t: st.type === "cancelled" ? "Rejected: " + ((extra && extra.reason) || "Not a good fit") : "Moved to " + st.name, at: DEMO.today }); if (st.type === "cancelled") { c.reason = (extra && extra.reason) || "Not a good fit"; } });
+    syncFilled();
+    toast(ids.length === 1 ? DEMO.cand(ids[0]).name + " moved to " + (st.type === "cancelled" ? "Rejected" : st.name) : ids.length + " candidates moved to " + st.name + (st.type === "hired" ? ". " + job().filled + " of " + job().openings + " filled" : ""));
+    S.sel = {}; redraw(); if (curDrawer) { fillDrawer(); }
+  }
+  /* decides what a move needs: interview -> schedule, rejected -> reason, otherwise just move */
+  function requestMove(ids, key) {
+    if (guardClosed()) { redraw(); return; }
+    var st = stageByKey(key) || (key === rejStage().key ? rejStage() : null); if (!st) { return; }
+    var cur = ids.filter(function (id) { return keyOf(DEMO.cand(id)) !== key || typeOf(DEMO.cand(id)) === "cancelled" && st.type !== "cancelled"; });
+    if (!cur.length) { redraw(); return; }
+    if (st.type === "cancelled") { rejectModal(cur); return; }
+    if (st.type === "interview") { scheduleModal(cur[0], function () { moveTo([cur[0]], key); }); return; }
+    moveTo(cur, key);
+  }
+
+  /* ---------- modals ---------- */
+  function opts(arr, sel) { return arr.map(function (x) { var v = Array.isArray(x) ? x[0] : x, l = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(l) + "</option>"; }).join(""); }
+  function scheduleModal(cid, done) {
+    var c = DEMO.cand(cid), m = openModal({ title: "Schedule interview", body: '<div class="row" style="margin-bottom:1rem">' + avatar(c.name) + "<b>" + esc(c.name) + '</b><span class="muted">' + esc(job().title) + '</span></div><div class="form-grid"><div class="full"><label class="lbl">Round</label><input class="input" id="sRound" value="' + (typeOf(c) === "interview" ? "Technical round 2" : "Technical round 1") + '"></div><div><label class="lbl">Date</label><input class="input" id="sDate" type="date" value="2026-10-12"></div><div><label class="lbl">Time</label><input class="input" id="sTime" type="time" value="11:00"></div><div><label class="lbl">Mode</label><select class="select" id="sMode"><option>Video call</option><option>On-site</option><option>Phone</option></select></div><div><label class="lbl">Length</label><select class="select" id="sDur"><option>30 min</option><option selected>45 min</option><option>60 min</option></select></div><div class="full"><label class="lbl">Interviewers</label><select class="select" id="sWho" multiple style="height:6rem">' + opts(DEMO.team, "") + '</select></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="sSave">Send invite</button>' });
+    [].forEach.call($("#sWho", m).options, function (o) { o.selected = job().managers.indexOf(o.value) >= 0; });
+    $("#sSave", m).addEventListener("click", function () {
+      var who = [].map.call($("#sWho", m).selectedOptions, function (o) { return o.value; }); if (!who.length) { toast("Pick at least one interviewer"); return; }
+      DEMO.interviews.push({ id: DEMO.interviews.length + 1, cand: c.id, round: $("#sRound", m).value || "Interview", date: $("#sDate", m).value, time: $("#sTime", m).value, dur: $("#sDur", m).value, mode: $("#sMode", m).value, who: who, status: "Scheduled" });
+      c.hist.push({ t: "Interview scheduled: " + ($("#sRound", m).value || "Interview"), at: DEMO.today }); c.mail = "Interview invitation sent";
+      m.remove(); if (done) { done(); } else { toast("Invite sent to " + c.name); redraw(); if (curDrawer) { fillDrawer(); } }
+    });
+    m.addEventListener("click", function (e) { if (e.target === m || e.target.closest("[data-close]")) { if (done) { redraw(); } } });
+  }
+  function rejectModal(ids) {
+    var m = openModal({ title: "Reject " + (ids.length === 1 ? DEMO.cand(ids[0]).name : ids.length + " candidates") + "?", body: '<div class="form-grid"><div class="full"><label class="lbl">Reason</label><select class="select" id="rReason">' + opts(CAN_REASONS, "") + '</select></div><div class="full"><label class="lbl">Note (optional)</label><textarea class="textarea" id="rNote"></textarea></div><label class="row full"><span class="switch"><input type="checkbox" id="rMail"><span></span></span>Send a rejection mail</label></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn bad" id="rSave">Reject</button>' });
+    $("#rSave", m).addEventListener("click", function () {
+      var reason = $("#rReason", m).value, mail = $("#rMail", m).checked; m.remove();
+      if (mail) { ids.forEach(function (id) { DEMO.cand(id).mail = "Rejection mail sent"; }); }
+      moveTo(ids, rejStage().key, { reason: reason });
+    });
+    m.addEventListener("click", function (e) { if (e.target === m || e.target.closest("[data-close]")) { redraw(); } });
+  }
+  function mailModal(ids, tpl) {
+    tpl = tpl || "invite"; var names = ids.map(function (id) { return DEMO.cand(id).name; });
+    var fill = function (k, nm) { return MAILS[k][1].replace("{name}", nm).replace("{job}", job().title); };
+    var m = openModal({ wide: true, title: "Send mail", body: '<div class="form-grid"><div class="full"><label class="lbl">To</label><div class="tags">' + names.map(function (n) { return '<span class="tag">' + esc(n) + "</span>"; }).join("") + '</div></div><div><label class="lbl">Template</label><select class="select" id="mTpl">' + Object.keys(MAILS).map(function (k) { return '<option value="' + k + '"' + (k === tpl ? " selected" : "") + ">" + MAILS[k][0] + "</option>"; }).join("") + '</select></div><div><label class="lbl">Subject</label><input class="input" id="mSub" value="' + esc(MAILS[tpl][0]) + " · " + esc(job().title) + '"></div><div class="full"><label class="lbl">Message</label><textarea class="textarea" id="mBody" style="min-height:10rem">' + esc(fill(tpl, names.length === 1 ? names[0].split(" ")[0] : "there")) + '</textarea>' + (names.length > 1 ? '<div class="hint">{name} is replaced for each person.</div>' : "") + "</div></div>", foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="mSend">' + icon("send", "sm") + "Send</button>" });
+    $("#mTpl", m).addEventListener("change", function () { var k = this.value; $("#mSub", m).value = MAILS[k][0] + " · " + job().title; $("#mBody", m).value = fill(k, names.length === 1 ? names[0].split(" ")[0] : "there"); });
+    $("#mSend", m).addEventListener("click", function () { var k = $("#mTpl", m).value; ids.forEach(function (id) { var c = DEMO.cand(id); c.mail = MAILS[k][0] + " sent"; c.hist.push({ t: "Mail sent: " + MAILS[k][0], at: DEMO.today }); }); m.remove(); toast("Mail sent to " + (ids.length === 1 ? names[0] : ids.length + " candidates")); redraw(); if (curDrawer) { fillDrawer(); } });
+  }
+  function noteModal(cid) {
+    var c = DEMO.cand(cid), m = openModal({ title: "Add note for " + c.name, body: '<textarea class="textarea" id="nText" placeholder="What should the team know?" style="min-height:7rem"></textarea>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="nSave">Save note</button>' });
+    $("#nSave", m).addEventListener("click", function () { var t = $("#nText", m).value.trim(); if (!t) { return; } (NOTES[cid] = NOTES[cid] || []).unshift({ by: DEMO.me.name, at: DEMO.today, text: t }); m.remove(); toast("Note added"); if (curDrawer) { fillDrawer(); } });
+  }
+  function candModal(stageKey) {
+    if (guardClosed()) { return; }
+    var m = openModal({ wide: true, title: "Add candidate", body: '<div class="form-grid"><div><label class="lbl">Full name <span class="req">*</span></label><input class="input" id="cName"></div><div><label class="lbl">Email <span class="req">*</span></label><input class="input" id="cMail" type="email"></div><div><label class="lbl">Mobile</label><input class="input" id="cPhone"></div><div><label class="lbl">Source</label><select class="select" id="cSrc">' + opts(["Website", "LinkedIn", "Indeed", "Naukri", "Referral", "Email"], "Website") + '</select></div><div><label class="lbl">Stage</label><select class="select" id="cStage">' + laneStages().map(function (s) { return '<option value="' + s.key + '"' + (s.key === stageKey ? " selected" : "") + ">" + esc(s.name) + "</option>"; }).join("") + '</select></div><div><label class="lbl">Resume</label><input class="input" type="file"></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="cSave">Add candidate</button>' });
+    $("#cSave", m).addEventListener("click", function () {
+      var n = $("#cName", m).value.trim(); if (!n) { toast("Please enter a name"); return; }
+      var id = Math.max.apply(null, C.map(function (c) { return c.id; })) + 1;
+      C.push({ id: id, name: n, email: $("#cMail", m).value || "not.set@mail.com", phone: $("#cPhone", m).value || "Not set", job: jobId, stage: $("#cStage", m).value, source: $("#cSrc", m).value, applied: DEMO.today, rating: 0, ai: 62 + (id * 7) % 30, exp: 0, loc: "Not set", notice: "Not set", ctc: "Not set", skills: [], hist: [{ t: "Added by " + DEMO.me.name, at: DEMO.today }] });
+      m.remove(); toast(n + " added"); redraw();
+    });
+  }
+  function uploadModal() {
+    if (guardClosed()) { return; }
+    var m = openModal({ title: "Upload resumes", body: '<div class="drop">' + icon("upload", "lg") + '<div style="margin:0.375rem 0 0.75rem">Drop PDF or Word files, or choose them. One candidate is created per file and scored by AI.</div><input type="file" id="uFiles" multiple accept=".pdf,.doc,.docx"></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="uGo">Create candidates</button>' });
+    $("#uGo", m).addEventListener("click", function () {
+      var files = [].slice.call($("#uFiles", m).files); if (!files.length) { toast("Choose at least one resume"); return; }
+      files.forEach(function (f) {
+        var id = Math.max.apply(null, C.map(function (c) { return c.id; })) + 1, nm = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\b\w/g, function (x) { return x.toUpperCase(); });
+        C.push({ id: id, name: nm, email: "parsed@resume.mail", phone: "Not set", job: jobId, stage: laneStages()[0].key, source: "Resume upload", applied: DEMO.today, rating: 0, ai: 60 + (id * 11) % 33, exp: 0, loc: "Not set", notice: "Not set", ctc: "Not set", skills: [], hist: [{ t: "Created from resume upload", at: DEMO.today }] });
+      });
+      m.remove(); toast(files.length + " candidate" + (files.length === 1 ? "" : "s") + " created from resumes"); redraw();
+    });
+  }
+  function shortlistModal() {
+    if (guardClosed()) { return; }
+    var want = job().skills.map(function (s) { return s.toLowerCase(); });
+    var here = jobCands().map(function (c) { return c.email; });
+    var list = C.filter(function (c) { return c.job !== jobId && here.indexOf(c.email) < 0 && c.stage !== "cancelled"; }).map(function (c) { var hit = c.skills.filter(function (s) { return want.some(function (w) { return s.toLowerCase().indexOf(w) >= 0 || w.indexOf(s.toLowerCase()) >= 0; }); }); return { c: c, hit: hit }; }).filter(function (x) { return x.hit.length; }).sort(function (a, b) { return b.hit.length - a.hit.length || b.c.ai - a.c.ai; }).slice(0, 6);
+    var m = openModal({ wide: true, title: "Resume shortlisting", body: '<p class="muted" style="margin-bottom:0.75rem;font-size:var(--fs-sm)">People from other recruitments and the skill zone whose skills match <b>' + esc(job().skills.join(", ")) + ".</b></p>" + (list.length ? list.map(function (x) { return '<div class="pickrow">' + avatar(x.c.name) + '<div class="grow who"><div><b>' + esc(x.c.name) + "</b><small>" + esc(DEMO.job(x.c.job).title) + " · " + x.c.exp + ' yrs</small></div></div><div class="tags">' + x.hit.slice(0, 3).map(function (s) { return '<span class="tag">' + esc(s) + "</span>"; }).join("") + "</div>" + ring(x.c.ai) + '<button class="btn sm" data-add="' + x.c.id + '">Add here</button></div>'; }).join("") : '<div class="empty">No matching profiles right now.</div>'), foot: '<button class="btn" data-close>Close</button>' });
+    m.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-add]"); if (!b) { return; }
+      var src = DEMO.cand(+b.dataset.add), id = Math.max.apply(null, C.map(function (c) { return c.id; })) + 1;
+      var copy = JSON.parse(JSON.stringify(src)); copy.id = id; copy.job = jobId; copy.stage = laneStages()[0].key; copy.rating = 0; copy.mail = ""; copy.hist = [{ t: "Shortlisted from " + DEMO.job(src.job).title, at: DEMO.today }]; C.push(copy);
+      b.outerHTML = chip("Added", "good", true); toast(src.name + " added to the pipeline"); redraw();
+    });
+  }
+  function stageModal(key) {
+    var st = key ? stageByKey(key) : null;
+    var m = openModal({ title: st ? "Edit stage" : "Add stage", body: '<div class="form-grid"><div class="full"><label class="lbl">Stage name <span class="req">*</span></label><input class="input" id="gName" value="' + esc(st ? st.name : "") + '"></div><div><label class="lbl">Stage type</label><select class="select" id="gType">' + DEMO.stages.filter(function (s) { return s.id !== "cancelled"; }).map(function (s) { return '<option value="' + s.id + '"' + (st && st.type === s.id ? " selected" : "") + ">" + s.label + "</option>"; }).join("") + '</select></div>' + (st ? "" : '<div><label class="lbl">Place after</label><select class="select" id="gAfter">' + laneStages().map(function (s) { return '<option value="' + s.key + '">' + esc(s.name) + "</option>"; }).join("") + '</select></div>') + '<div class="full"><label class="lbl">Stage managers</label><select class="select" id="gMgr" multiple style="height:6rem">' + opts(DEMO.team, "") + '</select><div class="hint">Managers are notified when a candidate enters this stage.</div></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="gSave">Save stage</button>' });
+    [].forEach.call($("#gMgr", m).options, function (o) { o.selected = st ? st.mgr.indexOf(o.value) >= 0 : job().managers.indexOf(o.value) >= 0; });
+    $("#gSave", m).addEventListener("click", function () {
+      var name = $("#gName", m).value.trim(); if (!name) { toast("Please enter a name"); return; }
+      var mgr = [].map.call($("#gMgr", m).selectedOptions, function (o) { return o.value; }); if (!mgr.length) { mgr = ["Admin User"]; }
+      if (st) { st.name = name; st.type = $("#gType", m).value; st.mgr = mgr; }
+      else { var arr = stages(), at = arr.map(function (s) { return s.key; }).indexOf($("#gAfter", m).value) + 1; arr.splice(at, 0, { key: "s" + Date.now(), name: name, type: $("#gType", m).value, mgr: mgr }); }
+      m.remove(); toast("Stage saved"); redraw();
+    });
+  }
+  function confirmModal(title, text, label, bad, fn) {
+    var m = openModal({ title: title, body: "<p>" + text + "</p>", foot: '<button class="btn" data-close>Cancel</button><button class="btn ' + (bad ? "bad" : "primary") + '" id="cfOk">' + label + "</button>" });
+    $("#cfOk", m).addEventListener("click", function () { m.remove(); fn(); });
+  }
+  function editJobDrawer() {
+    var j = job(), d = openDrawer({ title: "Edit recruitment", body: '<div class="form-grid"><div class="full"><label class="lbl">Title <span class="req">*</span></label><input class="input" id="eTitle" value="' + esc(j.title) + '"></div><div><label class="lbl">Department</label><select class="select" id="eDept">' + opts(["Development", "Designing", "Human Resource", "Accounts", "Business Development"], j.dept) + '</select></div><div><label class="lbl">Vacancies</label><input class="input" id="eVac" type="number" min="' + Math.max(1, j.filled) + '" value="' + j.openings + '"></div><div><label class="lbl">Location</label><input class="input" id="eLoc" value="' + esc(j.loc) + '"></div><div><label class="lbl">End date</label><input class="input" id="eEnd" type="date" value="' + j.end + '"></div><div class="full"><label class="lbl">Recruitment managers</label><select class="select" id="eMgr" multiple style="height:6rem">' + opts(DEMO.team, "") + '</select></div><label class="row full"><span class="switch"><input type="checkbox" id="eLi"' + (j.linkedin ? " checked" : "") + '><span></span></span>Also post on LinkedIn</label></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" id="eSave">Save changes</button>' });
+    [].forEach.call($("#eMgr", d).options, function (o) { o.selected = j.managers.indexOf(o.value) >= 0; });
+    $("#eSave", d).addEventListener("click", function () {
+      var t = $("#eTitle", d).value.trim(); if (!t) { toast("Please enter a title"); return; }
+      var mg = [].map.call($("#eMgr", d).selectedOptions, function (o) { return o.value; });
+      j.title = t; j.dept = $("#eDept", d).value; j.openings = Math.max(+$("#eVac", d).value || 1, j.filled); j.loc = $("#eLoc", d).value; j.end = $("#eEnd", d).value || j.end; j.linkedin = $("#eLi", d).checked; if (mg.length) { j.managers = mg; }
+      d.close(); toast("Recruitment updated"); redraw();
+    });
+  }
+
+  /* ---------- candidate drawer ---------- */
+  var curDrawer = null;
+  function fillDrawer() {
+    var d = curDrawer; if (!d) { return; }
+    var c = DEMO.cand(d.id), st = typeOf(c), idx = laneStages().map(function (s) { return s.key; }).indexOf(keyOf(c));
+    var ivs = DEMO.interviews.filter(function (i) { return i.cand === c.id; }), notes = NOTES[c.id] || [];
+    var track = laneStages().map(function (s, n) { return '<button data-go="' + s.key + '" class="' + (s.key === keyOf(c) && st !== "cancelled" ? "now" : n < idx && st !== "cancelled" ? "done" : "") + '" title="' + esc(s.name) + '">' + esc(s.name) + "</button>"; }).join("");
+    d.querySelector(".drawer-body").innerHTML =
+      '<div class="dh">' + avatar(c.name, "lg") + "<div><h2>" + esc(c.name) + '</h2><div class="sub">' + esc(job().title) + '</div><div class="row" style="margin-top:0.375rem">' + (st === "cancelled" ? chip("Rejected", "bad", true) : chip(stageByKey(keyOf(c)).name, st === "hired" ? "good" : "info", true)) + ring(c.ai) + "</div></div></div>" +
+      '<div class="dact"><button class="btn sm" data-d="sched">' + icon("calendar", "sm") + 'Schedule interview</button><button class="btn sm" data-d="mail">' + icon("mail", "sm") + 'Send mail</button><button class="btn sm" data-d="offer">' + icon("send", "sm") + 'Send LOI</button><button class="btn sm" data-d="docs">' + icon("file", "sm") + 'Request documents</button><button class="btn sm" data-d="resume">' + icon("eye", "sm") + "Resume</button></div>" +
+      (st === "cancelled" ? '<div class="callout" style="margin-bottom:1rem">' + icon("x", "sm") + "<div><b>Rejected:</b> " + esc(c.reason || "Not a good fit") + '</div><button class="btn sm right" data-go="' + laneStages()[0].key + '">Reopen</button></div>' : '<div class="track">' + track + "</div>") +
+      '<div class="dsec"><h4>Rating</h4><div class="rate">' + [1, 2, 3, 4, 5].map(function (n) { return '<button data-rate="' + n + '" class="' + (c.rating >= n ? "on" : "") + '" aria-label="' + n + ' stars">' + icon("starFill") + "</button>"; }).join("") + "</div></div>" +
+      (c.mail ? '<div class="dsec"><h4>Last mail</h4><div class="mini">' + icon("mail", "sm") + "<div>" + esc(c.mail) + "</div></div></div>" : "") +
+      (ivs.length ? '<div class="dsec"><h4>Interviews</h4>' + ivs.map(function (i) { return '<div class="mini">' + icon(i.mode === "Video call" ? "video" : "user", "sm") + "<div><b>" + esc(i.round) + "</b><small>" + fmtDate(i.date) + " · " + i.time + " · " + i.status + "</small></div></div>"; }).join("") + "</div>" : "") +
+      '<div class="dsec"><h4>Details</h4><dl class="dl" style="grid-template-columns:6.5rem 1fr"><dt>Email</dt><dd>' + esc(c.email) + "</dd><dt>Phone</dt><dd>" + esc(c.phone) + "</dd><dt>Location</dt><dd>" + esc(c.loc) + "</dd><dt>Experience</dt><dd>" + c.exp + " yrs · notice " + esc(c.notice) + "</dd><dt>Expected CTC</dt><dd>" + esc(c.ctc) + "</dd><dt>Source</dt><dd>" + esc(c.source) + " · " + ago(c.applied) + '</dd></dl><div class="tags" style="margin-top:0.625rem">' + c.skills.map(function (s) { return '<span class="tag">' + esc(s) + "</span>"; }).join("") + "</div></div>" +
+      '<div class="dsec"><h4>Notes</h4><div class="row" style="margin-bottom:0.5rem"><input class="input" id="dNote" placeholder="Add a note and press Enter"><button class="btn" data-d="note">Add</button></div>' + (notes.map(function (n) { return '<div class="note"><small>' + esc(n.by) + " · " + shortDate(n.at) + "</small>" + esc(n.text) + "</div>"; }).join("") || '<div class="faint" style="font-size:var(--fs-sm)">No notes yet.</div>') + "</div>" +
+      '<div class="dsec"><h4>History</h4><div class="timeline">' + c.hist.slice().reverse().map(function (h) { return '<div class="tl"><b>' + esc(h.t) + "</b><small>" + fmtDate(h.at) + "</small></div>"; }).join("") + "</div></div>";
+    d.querySelector(".drawer-foot").innerHTML = '<button class="btn danger" data-d="reject" style="margin-right:auto"' + (st === "cancelled" ? " hidden" : "") + ">" + icon("x", "sm") + 'Reject</button><button class="btn" data-d="zone">' + icon("spark", "sm") + 'Skill zone</button>' + (st === "hired" ? '<button class="btn primary" data-d="employee">' + icon("userplus", "sm") + "Convert to employee</button>" : '<a class="btn primary" href="candidate-profile.html?id=' + c.id + '">Full profile</a>');
+  }
+  function openCand(id) {
+    var d = openDrawer({ title: "Candidate", body: "", foot: "x" }); curDrawer = { id: id, el: d };
+    d.querySelector(".drawer").style.width = "min(34rem, 100%)";
+    curDrawer.querySelector = function (s) { return d.querySelector(s); };
+    var close = d.close; d.close = function () { curDrawer = null; close(); };
+    fillDrawer();
+    d.addEventListener("click", function (e) {
+      var c = DEMO.cand(id);
+      var g = e.target.closest("[data-go]"); if (g) { requestMove([id], g.dataset.go); return; }
+      var r = e.target.closest("[data-rate]"); if (r) { c.rating = c.rating === +r.dataset.rate ? 0 : +r.dataset.rate; redraw(); fillDrawer(); return; }
+      var a = e.target.closest("[data-d]"); if (!a) { return; }
+      var act = a.dataset.d;
+      if (act === "sched") { scheduleModal(id); }
+      else if (act === "mail") { mailModal([id], "invite"); } else if (act === "offer") { mailModal([id], "offer"); } else if (act === "docs") { mailModal([id], "docs"); }
+      else if (act === "resume") { toast("Opening " + c.name + "'s resume (demo)"); }
+      else if (act === "note") { var t = $("#dNote", d); if (t.value.trim()) { (NOTES[id] = NOTES[id] || []).unshift({ by: DEMO.me.name, at: DEMO.today, text: t.value.trim() }); fillDrawer(); toast("Note added"); } }
+      else if (act === "reject") { rejectModal([id]); }
+      else if (act === "zone") { toast(c.name + " added to the skill zone"); }
+      else if (act === "employee") { toast(c.name + " converted to an employee (demo)"); }
+    });
+    d.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.id === "dNote") { e.preventDefault(); d.querySelector('[data-d="note"]').click(); } });
+  }
+
+  /* ---------- clicks ---------- */
+  function cardMenu(anchor, id) {
+    var c = DEMO.cand(id), items = '<button class="item" data-pick="open">' + icon("user", "sm") + 'Open full profile</button><button class="item" data-pick="sched">' + icon("calendar", "sm") + 'Schedule interview</button><button class="item" data-pick="docs">' + icon("file", "sm") + 'Request documents</button><button class="item" data-pick="zone">' + icon("spark", "sm") + 'Add to skill zone</button><button class="item" data-pick="archive">' + icon("inbox", "sm") + 'Archive</button><div class="sep"></div>' + (typeOf(c) === "cancelled" ? '<button class="item" data-pick="reopen">' + icon("refresh", "sm") + "Reopen</button>" : '<button class="item danger" data-pick="reject">' + icon("x", "sm") + "Reject</button>");
+    openMenu(anchor, items, function (v) {
+      if (v === "open") { go("candidate-profile.html?id=" + id); } else if (v === "sched") { scheduleModal(id); } else if (v === "docs") { mailModal([id], "docs"); }
+      else if (v === "zone") { toast(c.name + " added to the skill zone"); } else if (v === "archive") { C.splice(C.indexOf(c), 1); toast(c.name + " archived"); redraw(); } else if (v === "reject") { requestMove([id], rejStage().key); } else if (v === "reopen") { requestMove([id], laneStages()[0].key); }
+    }, 200);
+  }
+  $("#out").addEventListener("click", function (e) {
+    var q = e.target.closest("[data-q]");
+    if (q) {
+      e.stopPropagation(); var host = e.target.closest("[data-id]"), id = +host.dataset.id;
+      var act = q.dataset.q;
+      if (act === "sched") { if (!guardClosed()) { scheduleModal(id); } }
+      else if (act === "loi") { mailModal([id], "offer"); }
+      else if (act === "docs") { mailModal([id], "docs"); }
+      else if (act === "mail") { mailModal([id], "invite"); }
+      else if (act === "note") { noteModal(id); }
+      else if (act === "status") {
+        openMenu(q, "<h4>Move to</h4>" + laneStages().map(function (s) { return '<button class="item' + (s.key === keyOf(DEMO.cand(id)) ? " on" : "") + '" data-pick="' + s.key + '"><span class="dot" style="width:0.5rem;height:0.5rem;border-radius:2px;background:' + color(s) + '"></span>' + esc(s.name) + "</button>"; }).join("") + '<div class="sep"></div><button class="item danger" data-pick="__rej">' + icon("x", "sm") + "Reject</button>", function (k) { requestMove([id], k === "__rej" ? rejStage().key : k); }, 190);
+      } else { cardMenu(q, id); }
+      return;
+    }
+    if (e.target.closest("[data-sel]")) { return; }
+    var sm = e.target.closest("[data-smenu]");
+    if (sm) { e.stopPropagation(); stageMenu(sm, sm.dataset.smenu); return; }
+    var ai = e.target.closest("[data-addin]"); if (ai) { candModal(ai.dataset.addin); return; }
+    var mo = e.target.closest("[data-more]"); if (mo) { S.more[mo.dataset.more] = (S.more[mo.dataset.more] || 6) + 6; drawOut(); return; }
+    var em = e.target.closest("[data-empty]"); if (em) { em.dataset.empty === "add" ? candModal() : uploadModal(); return; }
+    var th = e.target.closest("[data-togrej]"); if (th) { S.rej = !S.rej; drawTools(); drawOut(); return; }
+    if (e.target.closest("select, .lane-head")) { return; }
+    var host2 = e.target.closest("[data-id]"); if (host2) { go("candidate-profile.html?id=" + host2.dataset.id); }   // a card or row opens the complete profile page
+  });
+  $("#out").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.classList.contains("pcard")) { go("candidate-profile.html?id=" + e.target.dataset.id); } });
+  $("#out").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "allSel") { jobCands().filter(visible).forEach(function (c) { if (t.checked) { S.sel[c.id] = 1; } else { delete S.sel[c.id]; } }); drawOut(); drawBulk(); return; }
+    if (t.dataset.sel) { if (t.checked) { S.sel[t.dataset.sel] = 1; } else { delete S.sel[t.dataset.sel]; } var card = t.closest(".pcard"); if (card) { card.classList.toggle("sel", t.checked); } drawBulk(); return; }
+    if (t.dataset.stsel) { requestMove([+t.dataset.stsel], t.value); }
+  });
+  function stageMenu(anchor, key) {
+    var arr = stages(), i = arr.map(function (s) { return s.key; }).indexOf(key);
+    openMenu(anchor, '<button class="item" data-pick="edit">' + icon("edit", "sm") + 'Edit stage</button><button class="item" data-pick="add">' + icon("plus", "sm") + 'Add candidate here</button><button class="item" data-pick="left"' + (i === 0 ? " disabled" : "") + '>' + icon("left", "sm") + 'Move left</button><button class="item" data-pick="right"' + (i >= arr.length - 1 ? " disabled" : "") + '>' + icon("right", "sm") + 'Move right</button><div class="sep"></div><button class="item danger" data-pick="del">' + icon("trash", "sm") + "Delete stage</button>", function (v) {
+      var st = stageByKey(key);
+      if (v === "edit") { stageModal(key); } else if (v === "add") { candModal(key); }
+      else if (v === "left" || v === "right") { var j = v === "left" ? i - 1 : i + 1; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; toast("Sequence updated"); redraw(); }
+      else if (v === "del") {
+        var n = jobCands().filter(function (c) { return keyOf(c) === key; }).length;
+        if (laneStages().length <= 2) { toast("A pipeline needs at least two stages"); return; }
+        confirmModal("Delete stage?", "<b>" + esc(st.name) + "</b> will be removed." + (n ? " Its " + n + " candidate" + (n === 1 ? "" : "s") + " move to the first stage." : ""), "Delete stage", true, function () {
+          var first = laneStages().filter(function (s) { return s.key !== key; })[0].key; C.forEach(function (c) { if (c.job === jobId && c.stage === key) { c.stage = first; c.hist.push({ t: "Moved to " + stageByKey(first).name + " (stage deleted)", at: DEMO.today }); } });
+          arr.splice(arr.indexOf(st), 1); toast("Stage deleted"); redraw();
+        });
+      }
+    }, 190);
+  }
+  function headClick(e) {
+    if (e.target.closest("#prevJob")) { flip(-1); return; }
+    if (e.target.closest("#nextJob")) { flip(1); return; }
+    var jm = e.target.closest("#jobMore"); if (jm) { e.stopPropagation(); jobMenu(jm); return; }
+    if (e.target.closest("#minBtn")) {
+      S.min = !S.min; try { localStorage.setItem("ariel-pipe2-min", S.min ? "1" : "0"); } catch (x) {}
+      $("#pv").classList.toggle("min", S.min); document.body.classList.toggle("pmin", S.min); drawTools(); fitBoard(); return;
+    }
+    if (e.target.closest("#jdMore")) { var jd = $("#jd"); jd.classList.toggle("open"); $("#jdw").classList.toggle("open", jd.classList.contains("open")); e.target.closest("#jdMore").textContent = jd.classList.contains("open") ? "Show less" : "Read more"; fitBoard(); return; }
+    if (e.target.closest("#liPost")) { job().linkedin = true; toast("Posted to LinkedIn (demo)"); drawHead(); return; }
+    var jb = e.target.closest("#jobBtn");
+    if (jb) {
+      e.stopPropagation();
+      var open = DEMO.jobs.filter(function (j) { return j.status === "open"; }), closed = DEMO.jobs.filter(function (j) { return j.status === "closed"; });
+      var row = function (j) { return '<button class="item' + (j.id === jobId ? " on" : "") + '" data-pick="' + j.id + '">' + esc(j.title) + (j.linkedin ? " " + liIcon() : "") + '<span class="tail">' + C.filter(function (c) { return c.job === j.id; }).length + "</span></button>"; };
+      openMenu(jb, "<h4>Open recruitments</h4>" + open.map(row).join("") + (closed.length ? "<h4>Closed</h4>" + closed.map(row).join("") : ""), function (v) { jobId = +v; S.sel = {}; S.more = {}; setUrl(); redraw(); }, 280);
+    }
+  }
+  ["ptop", "rhead"].forEach(function (id) { document.getElementById(id).addEventListener("click", headClick); });
+  /* [ and ] flip between pipelines when you are not typing */
+  document.addEventListener("keydown", function (e) {
+    if (e.target.closest && e.target.closest("input, textarea, select")) { return; }
+    if (e.key === "[") { flip(-1); } else if (e.key === "]") { flip(1); }
+  });
+  function openFilters(fb) {
+    var srcs = ["all"].concat(C.filter(function (c) { return c.job === jobId; }).map(function (c) { return c.source; }).filter(function (s, i, a) { return a.indexOf(s) === i; }));
+    var m = openMenu(fb, '<div class="fpanel"><label>Minimum rating</label><select class="select" data-k="rate">' + opts([["0", "Any"], ["1", "1 star +"], ["2", "2 stars +"], ["3", "3 stars +"], ["4", "4 stars +"], ["5", "5 stars"]], String(S.rate)) + '</select><label>Minimum AI match</label><select class="select" data-k="ai">' + opts([["0", "Any"], ["60", "60 +"], ["70", "70 +"], ["80", "80 +"], ["90", "90 +"]], String(S.ai)) + '</select><label>Source</label><select class="select" data-k="src">' + srcs.map(function (s) { return '<option value="' + esc(s) + '"' + (s === S.src ? " selected" : "") + ">" + (s === "all" ? "All sources" : esc(s)) + "</option>"; }).join("") + '</select><button class="btn sm" style="width:100%;margin-top:0.75rem" data-reset>Reset filters</button></div>', null, 250);
+    if (!m) { return; }
+    m.addEventListener("change", function (ev) { var k = ev.target.dataset.k; if (k) { S[k] = k === "src" ? ev.target.value : +ev.target.value; drawTools(); drawOut(); } });
+    m.querySelector("[data-reset]").addEventListener("click", function () { S.rate = 0; S.ai = 0; S.src = "all"; closeMenu(); drawTools(); drawOut(); });
+  }
+  function toggleJobFlow() {
+    var j = job();
+    if (isClosed()) { confirmModal("Reopen this recruitment?", "<b>" + esc(j.title) + "</b> will accept candidates again.", "Reopen", false, function () { j.status = "open"; toast("Recruitment reopened"); redraw(); }); }
+    else { confirmModal("Close this recruitment?", "<b>" + esc(j.title) + "</b> stops taking candidates. You can reopen it later.", "Close recruitment", true, function () { j.status = "closed"; toast("Recruitment closed"); redraw(); }); }
+  }
+  function deleteJob() {
+    var j = job(), n = jobCands().length;
+    confirmModal("Delete this recruitment?", "<b>" + esc(j.title) + "</b> and its " + n + " candidate" + (n === 1 ? "" : "s") + " will be removed. This cannot be undone.", "Delete", true, function () {
+      for (var k = C.length - 1; k >= 0; k--) { if (C[k].job === j.id) { C.splice(k, 1); } }
+      var at = DEMO.jobs.indexOf(j); DEMO.jobs.splice(at, 1);
+      if (!DEMO.jobs.length) { go("job-openings.html"); return; }
+      jobId = DEMO.jobs[Math.min(at, DEMO.jobs.length - 1)].id; S.sel = {}; S.more = {}; setUrl(); toast("Recruitment deleted"); redraw();
+    });
+  }
+  /* the three dots in the corner of the details card */
+  function jobMenu(anchor) {
+    openMenu(anchor,
+      '<button class="item" data-pick="stage">' + icon("layers", "sm") + 'Add stage</button><button class="item" data-pick="edit">' + icon("edit", "sm") + 'Edit</button><button class="item" data-pick="toggle">' + icon(isClosed() ? "refresh" : "flag", "sm") + (isClosed() ? "Reopen" : "Close") + '</button><div class="sep"></div><button class="item danger" data-pick="del">' + icon("trash", "sm") + "Delete</button>",
+      function (v) {
+        if (v === "stage") { stageModal(); } else if (v === "edit") { editJobDrawer(); } else if (v === "toggle") { toggleJobFlow(); } else if (v === "del") { deleteJob(); }
+      }, 180);
+  }
+  $("#tools").addEventListener("click", function (e) {
+    if (e.target.closest("#addBtn")) { candModal(); return; }
+    var xs = e.target.closest("#xs"); if (xs) { $("#q").focus(); return; }
+  });
+  $("#tools").addEventListener("input", function (e) { if (e.target.id === "q") { S.q = e.target.value.toLowerCase(); $("#xs").classList.toggle("has", !!e.target.value); drawOut(); } });
+
+  /* bulk actions */
+  $("#bulk").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-b]"); if (!b) { return; } var ids = Object.keys(S.sel).map(Number);
+    if (b.dataset.b === "clear") { S.sel = {}; drawOut(); drawBulk(); }
+    else if (b.dataset.b === "mail") { mailModal(ids, "invite"); }
+    else if (b.dataset.b === "reject") { requestMove(ids, rejStage().key); }
+    else if (b.dataset.b === "zone") { toast(ids.length + " added to the skill zone"); S.sel = {}; drawOut(); drawBulk(); }
+    else if (b.dataset.b === "move") { e.stopPropagation(); openMenu(b, laneStages().map(function (s) { return '<button class="item" data-pick="' + s.key + '"><span class="dot" style="width:0.5rem;height:0.5rem;border-radius:2px;background:' + color(s) + '"></span>' + esc(s.name) + "</button>"; }).join(""), function (k) { requestMove(ids, k); }, 190); }
+  });
+
+  /* ---------- drag and drop: cards between lanes, lanes by their header ---------- */
+  var dragCard = null, dragStage = null;
+  document.addEventListener("dragstart", function (e) {
+    var h = e.target.closest && e.target.closest("[data-head]");
+    if (h) { dragStage = h.dataset.head; h.closest(".lane").classList.add("lane-drag"); e.dataTransfer.setData("text/plain", "stage"); e.dataTransfer.effectAllowed = "move"; return; }
+    var k = e.target.closest && e.target.closest(".pcard"); if (!k) { return; }
+    if (isClosed()) { e.preventDefault(); toast("This recruitment is closed. Reopen it first."); return; }
+    dragCard = +k.dataset.id; k.classList.add("drag"); e.dataTransfer.setData("text/plain", String(dragCard)); e.dataTransfer.effectAllowed = "move";
+  });
+  document.addEventListener("dragend", function () { dragCard = null; dragStage = null; if ($("#board")) { drawOut(); } });
+  document.addEventListener("dragover", function (e) {
+    var l = e.target.closest && e.target.closest(".lane"); if (!l || !(dragCard || dragStage)) { return; }
+    if (dragStage && l.classList.contains("rej")) { return; }
+    e.preventDefault(); [].forEach.call(document.querySelectorAll(".lane"), function (x) { x.classList.toggle(dragStage ? "stage-over" : "over", x === l); });
+  });
+  document.addEventListener("drop", function (e) {
+    var l = e.target.closest && e.target.closest(".lane"); if (!l) { return; }
+    if (dragStage) {
+      e.preventDefault(); var from = dragStage, to = l.dataset.stage; dragStage = null;
+      if (from !== to && !l.classList.contains("rej")) { var arr = stages(), a = arr.map(function (s) { return s.key; }); var item = arr.splice(a.indexOf(from), 1)[0]; arr.splice(arr.map(function (s) { return s.key; }).indexOf(to) + (a.indexOf(from) < a.indexOf(to) ? 1 : 0), 0, item); toast("Sequence updated"); }
+      redraw(); return;
+    }
+    if (!dragCard) { return; }
+    e.preventDefault(); var ids = S.sel[dragCard] ? Object.keys(S.sel).map(Number) : [dragCard]; dragCard = null;
+    requestMove(ids, l.classList.contains("rej") ? rejStage().key : l.dataset.stage);
+  });
+
+  redraw();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

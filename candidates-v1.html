@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidates</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+  .bulk { position: sticky; bottom: 1rem; margin: 0.875rem auto 0; width: fit-content; background: var(--ink); color: var(--bg); border-radius: 0.75rem; padding: 0.5rem 0.625rem 0.5rem 1rem; display: flex; gap: 0.5rem; align-items: center; box-shadow: var(--shadow-lg); z-index: 15; }
+  .bulk .btn { background: transparent; border-color: color-mix(in srgb, var(--bg) 30%, transparent); color: var(--bg); }
+  .bulk .btn:hover { background: color-mix(in srgb, var(--bg) 14%, transparent); }
+</style>
+</head>
+<body data-module="recruitment" data-page="candidates" data-title="Candidates">
+<main id="page">
+  <div data-actions>
+    <button class="btn"><span data-i="upload"></span>Import</button>
+    <button class="btn"><span data-i="download"></span>Export</button>
+    <button class="btn primary" id="add"><span data-i="plus"></span>Add candidate</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="field-search"><span data-i="search"></span><input id="q" type="search" placeholder="Search name, email, skill" aria-label="Search candidates"></div>
+    <select class="select" id="job" style="width:13.75rem" aria-label="Job opening"></select>
+    <select class="select" id="source" style="width:9.375rem" aria-label="Source"></select>
+    <select class="select" id="sort" style="width:10.625rem" aria-label="Sort"><option value="applied">Newest first</option><option value="ai">AI score</option><option value="rating">Rating</option><option value="name">Name</option></select>
+    <div class="seg right" id="view"><button data-v="table" class="on"><span data-i="list" data-c="sm"></span>List</button><button data-v="cards"><span data-i="grid" data-c="sm"></span>Cards</button></div>
+  </div>
+  <div class="filters" id="stages" style="margin-bottom:0.875rem"></div>
+
+  <div id="out"></div>
+  <div class="bulk" id="bulk" hidden></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  var state = { stage: "all", job: "0", source: "All sources", q: "", sort: "applied", v: "table", sel: {} };
+  var C = DEMO.candidates;
+
+  document.getElementById("job").innerHTML = '<option value="0">All job openings</option>' + DEMO.jobs.map(function (j) { return '<option value="' + j.id + '">' + j.title + '</option>'; }).join("");
+  var sources = C.map(function (c) { return c.source; }).filter(function (s, i, a) { return a.indexOf(s) === i; }).sort();
+  document.getElementById("source").innerHTML = ["All sources"].concat(sources).map(function (s) { return "<option>" + s + "</option>"; }).join("");
+
+  function filtered(ignoreStage) {
+    return C.filter(function (c) {
+      var hay = (c.name + c.email + c.skills.join(" ")).toLowerCase();
+      return (ignoreStage || state.stage === "all" || c.stage === state.stage) && (state.job === "0" || c.job === +state.job) &&
+        (state.source === "All sources" || c.source === state.source) && (!state.q || hay.indexOf(state.q) >= 0);
+    }).sort(function (a, b) {
+      if (state.sort === "name") { return a.name.localeCompare(b.name); }
+      if (state.sort === "applied") { return a.applied < b.applied ? 1 : -1; }
+      return b[state.sort] - a[state.sort];
+    });
+  }
+  function drawStages() {
+    var base = filtered(true);
+    document.getElementById("stages").innerHTML = '<button class="fchip' + (state.stage === "all" ? " on" : "") + '" data-s="all">All <span class="n">' + base.length + '</span></button>' + DEMO.stages.map(function (s) {
+      var n = base.filter(function (c) { return c.stage === s.id; }).length;
+      return '<button class="fchip' + (state.stage === s.id ? " on" : "") + '" data-s="' + s.id + '"><span style="width:0.5rem;height:0.5rem;border-radius:0.1875rem;background:' + s.color + '"></span>' + s.label + ' <span class="n">' + n + '</span></button>';
+    }).join("");
+  }
+  function drawBulk() {
+    var n = Object.keys(state.sel).length, b = document.getElementById("bulk");
+    b.hidden = !n;
+    b.innerHTML = '<b>' + n + ' selected</b><button class="btn sm" data-b="stage">Move stage</button><button class="btn sm" data-b="mail">Send mail</button><button class="btn sm" data-b="zone">Add to skill zone</button><button class="btn sm icon" data-b="clear" aria-label="Clear selection">' + icon("x", "sm") + '</button>';
+  }
+  function draw() {
+    var list = filtered(), out = document.getElementById("out");
+    if (!list.length) { out.innerHTML = '<div class="card empty">' + icon("search", "lg") + '<p style="margin-top:0.5rem">No candidates match these filters.</p></div>'; return; }
+    if (state.v === "table") {
+      out.innerHTML = '<div class="card flush"><div class="table-wrap"><table class="tbl"><thead><tr><th style="width:2.25rem"><input type="checkbox" id="all" aria-label="Select all"></th><th>Candidate</th><th>Applied for</th><th>Stage</th><th>Rating</th><th>AI match</th><th>Source</th><th>Applied</th><th></th></tr></thead><tbody>' +
+        list.map(function (c) {
+          return '<tr><td><input type="checkbox" data-sel="' + c.id + '"' + (state.sel[c.id] ? " checked" : "") + ' aria-label="Select ' + c.name + '"></td><td><a href="candidate-profile.html?id=' + c.id + '" style="color:inherit;text-decoration:none">' + person(c.name, c.email) + '</a></td><td>' + DEMO.job(c.job).title + '</td><td>' + stageChip(c.stage) + '</td><td>' + (c.rating ? stars(c.rating) : '<span class="faint">Not rated</span>') + '</td><td>' + ring(c.ai) + '</td><td>' + c.source + '</td><td>' + ago(c.applied) + '</td><td class="act"><a class="btn sm" href="candidate-profile.html?id=' + c.id + '">Open</a></td></tr>';
+        }).join("") + '</tbody></table></div><div class="table-foot">Showing ' + list.length + ' of ' + C.length + ' candidates<div class="pager"><button class="on">1</button></div></div></div>';
+    } else {
+      out.innerHTML = '<div class="grid g3">' + list.map(function (c) {
+        return '<article class="card cand-card"><div class="row">' + avatar(c.name, "md") + '<div class="grow who"><div><b>' + c.name + '</b><small>' + DEMO.job(c.job).title + '</small></div></div>' + ring(c.ai) + '</div>' +
+          '<div class="row wrap">' + stageChip(c.stage) + (c.rating ? stars(c.rating) : "") + '</div>' +
+          '<div class="meta"><span>' + icon("pin", "sm") + c.loc + '</span><span>' + icon("briefcase", "sm") + c.exp + ' yrs</span><span>' + icon("clock", "sm") + c.notice + '</span></div>' +
+          '<div class="tags">' + c.skills.slice(0, 4).map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div>' +
+          '<div class="row" style="border-top:1px solid var(--line);padding-top:0.75rem"><span class="faint" style="font-size:var(--fs-xs)">' + c.source + ' · ' + ago(c.applied) + '</span><a class="btn sm right" href="candidate-profile.html?id=' + c.id + '">Open profile</a></div></article>';
+      }).join("") + '</div>';
+    }
+  }
+  function redraw() { drawStages(); draw(); drawBulk(); }
+
+  document.getElementById("stages").addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (b) { state.stage = b.dataset.s; redraw(); } });
+  document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value.toLowerCase(); redraw(); });
+  ["job", "source", "sort"].forEach(function (k) { document.getElementById(k).addEventListener("change", function (e) { state[k] = e.target.value; redraw(); }); });
+  document.getElementById("view").addEventListener("click", function (e) { var b = e.target.closest("[data-v]"); if (!b) { return; } state.v = b.dataset.v; [].forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); }); draw(); });
+  document.getElementById("out").addEventListener("change", function (e) {
+    if (e.target.id === "all") { filtered().forEach(function (c) { if (e.target.checked) { state.sel[c.id] = 1; } else { delete state.sel[c.id]; } }); draw(); drawBulk(); return; }
+    if (e.target.dataset.sel) { if (e.target.checked) { state.sel[e.target.dataset.sel] = 1; } else { delete state.sel[e.target.dataset.sel]; } drawBulk(); }
+  });
+  document.getElementById("bulk").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-b]"); if (!b) { return; }
+    if (b.dataset.b === "clear") { state.sel = {}; draw(); drawBulk(); } else { toast("Bulk action: " + b.textContent.trim() + " (demo only)"); }
+  });
+  document.getElementById("add").addEventListener("click", function () {
+    openModal({ title: "Add candidate", wide: true, body:
+      '<div class="form-grid"><div><label class="lbl">Full name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Email <span class="req">*</span></label><input class="input" type="email"></div>' +
+      '<div><label class="lbl">Mobile</label><input class="input"></div><div><label class="lbl">Job opening</label><select class="select">' + DEMO.jobs.map(function (j) { return "<option>" + j.title + "</option>"; }).join("") + '</select></div>' +
+      '<div><label class="lbl">Source</label><select class="select">' + sources.map(function (s) { return "<option>" + s + "</option>"; }).join("") + '</select></div><div><label class="lbl">Resume</label><input class="input" type="file"></div></div>',
+      foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Save candidate</button>' });
+  });
+  redraw();
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

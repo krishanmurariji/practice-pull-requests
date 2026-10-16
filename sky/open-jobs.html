@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Jobs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .hero-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.5rem; }
+  .hero-row .txt { flex: 1 1 18rem; }
+  .hero-row .field { flex: 0 1 22rem; }
+  .role { padding: 0.65rem 0.95rem; align-items: flex-start; cursor: default; animation: skyIn 0.35s both; animation-delay: calc(var(--i, 0) * 35ms); }
+  .role .main b { font-size: var(--fs-md); }
+  .role .dept { font-size: var(--fs-xs); color: var(--ink-3); }
+  .role .lead { display: flex; align-items: baseline; gap: 0.6rem; }
+  /* the detail line and skills slide open under the title on hover */
+  .role .peek { padding: 0.6rem 0.9rem; }
+  .role .meta { font-size: var(--fs-xs); gap: 0.3rem 0.8rem; }
+  .role .meta svg.i { width: 0.75rem; height: 0.75rem; color: var(--ink-3); }
+  .role .tags { margin-top: 0.45rem; }
+  .role .tag { font-size: 0.62rem; }
+  .role .side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; align-self: center; flex: none; }
+  .role .side .left { font-size: var(--fs-xs); color: var(--ink-3); white-space: nowrap; }
+  .role .apply { opacity: 0; transform: translateX(0.4rem); transition: opacity 0.2s, transform 0.2s; }
+  .role:hover .apply, .role:focus-within .apply { opacity: 1; transform: none; }
+  @media (hover: none) { .role .apply { opacity: 1; transform: none; } }
+</style>
+</head>
+<body data-module="recruitment" data-page="open-jobs" data-title="Open Jobs">
+<main id="page">
+  <div data-actions>
+    <button class="xbtn" id="copy" aria-label="Copy public link"><span data-i="link"></span><span class="xl">Copy public link</span></button>
+    <button class="xbtn" aria-label="Preview as candidate"><span data-i="eye"></span><span class="xl">Preview as candidate</span></button>
+  </div>
+
+  <section class="sky-hero">
+    <div class="hero-row">
+      <div class="txt"><h2>Build the next chapter with Ariel</h2><p>Pick a role that fits you and apply in two minutes.</p></div>
+      <div class="field"><span data-i="search"></span><input id="q" type="search" placeholder="Search roles or skills" aria-label="Search roles"></div>
+    </div>
+  </section>
+
+  <div class="sub-bar"><div id="filters"></div><span class="faint right" id="count" style="font-size:var(--fs-xs)"></span></div>
+  <div id="out"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var open = DEMO.jobs.filter(function (j) { return j.status === "open"; });
+  var depts = ["All"].concat(open.map(function (j) { return j.dept; }).filter(function (d, i, a) { return a.indexOf(d) === i; }));
+  var state = { d: "All", q: "" };
+  function drawFilters() { document.getElementById("filters").innerHTML = pills(depts.map(function (d) { return [d, d]; }), state.d); }
+  function draw() {
+    var list = open.filter(function (j) { return (state.d === "All" || j.dept === state.d) && (!state.q || (j.title + j.dept + j.skills.join(" ")).toLowerCase().indexOf(state.q) >= 0); });
+    document.getElementById("count").textContent = list.length + " open role" + (list.length === 1 ? "" : "s");
+    document.getElementById("out").innerHTML = list.length ? list.map(function (j, i) {
+      var left = j.openings - j.filled;
+      return '<article class="lrow role hov" tabindex="0" style="--i:' + i + '"><div class="main"><div class="lead"><b>' + j.title + '</b><span class="dept">' + j.dept + '</span></div>' +
+        '<div class="peek"><div class="in"><div class="meta"><span>' + icon("pin") + j.loc + '</span><span>' + icon("briefcase") + j.type + '</span><span>' + icon("clock") + j.exp + '</span><span>' + icon("wallet") + j.salary + '</span></div>' +
+        '<div class="tags">' + j.skills.map(function (s) { return '<span class="tag">' + s + '</span>'; }).join("") + '</div></div></div></div>' +
+        '<div class="side"><span class="left">' + left + ' left · closes ' + shortDate(j.end) + '</span><button class="btn sm primary apply" data-id="' + j.id + '">Apply now</button></div></article>';
+    }).join("") : '<div class="card empty">No roles match your search.</div>';
+  }
+  document.getElementById("filters").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (b) { state.d = b.dataset.t; drawFilters(); draw(); } });
+  document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value.toLowerCase(); draw(); });
+  document.getElementById("out").addEventListener("click", function (e) {
+    var b = e.target.closest(".apply"); if (!b) { return; }
+    var j = DEMO.job(+b.dataset.id);
+    openDrawer({ title: "Apply for " + j.title, body:
+      '<div class="form-grid"><div><label class="lbl">Full name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Email <span class="req">*</span></label><input class="input" type="email"></div>' +
+      '<div><label class="lbl">Mobile</label><input class="input"></div><div><label class="lbl">Total experience</label><input class="input" placeholder="Years"></div>' +
+      '<div class="full"><label class="lbl">Resume <span class="req">*</span></label><div class="card" style="text-align:center;border-style:dashed;padding:1.2rem;border-color:#b9e0f6;background:var(--sky-wash)">' + icon("upload", "lg") + '<div class="muted" style="margin-top:0.375rem;font-size:var(--fs-sm)">Drop a PDF or Word file here, or click to browse</div></div></div>' +
+      '<div class="full"><label class="lbl">Anything else we should know</label><textarea class="textarea"></textarea></div></div>',
+      foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Submit application</button>' });
+  });
+  document.getElementById("copy").addEventListener("click", function () { toast("Public link copied (demo)"); });
+  drawFilters(); draw();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

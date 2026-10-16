@@ -1,0 +1,95 @@
+/* =====================================================================
+   DESIGN TOKENS  -  change colours, fonts, radii and spacing here only.
+   Every other stylesheet reads these variables, nothing is hard-coded.
+
+   Look: neutral and flat. Thin borders, no heavy shadows. The accent colour
+   is used only for primary buttons, links and small highlights.
+   ===================================================================== */
+
+:root {
+  /* accent (changeable in Appearance). Everything tinted is derived from it. */
+  --brand: #1d6fe8;
+  --brand-ink: #ffffff;                                         /* text on the accent */
+  --brand-strong: color-mix(in srgb, var(--brand) 82%, #000);   /* hover, pressed     */
+  --brand-soft: color-mix(in srgb, var(--brand) 10%, #fff);     /* light tint         */
+
+  /* surfaces (light) */
+  --bg: #f6f7f9;             /* page background                        */
+  --surface: #ffffff;        /* sidebar, cards, tables, popovers       */
+  --surface-2: #f2f4f7;      /* hover, active menu item, inputs        */
+  --surface-3: #e6e9ee;      /* pressed, skeleton, tracks              */
+  --line: #e4e7ec;           /* every border and divider               */
+
+  /* text */
+  --ink: #101828;
+  --ink-2: #475467;
+  --ink-3: #98a2b3;
+
+  /* status tones: foreground + soft background */
+  --good: #12805c;   --good-soft: #dff5ec;
+  --warn: #b25e09;   --warn-soft: #fdf0d5;
+  --bad: #c9372c;    --bad-soft: #fde7e4;
+  --info: var(--brand);   --info-soft: var(--brand-soft);
+  --violet: #6552d0; --violet-soft: #ece8fb;
+  --teal: #0e8f8f;   --teal-soft: #d9f1f1;
+
+  /* chart series */
+  --c1: var(--brand); --c2: #6552d0; --c3: #12805c; --c4: #d9831f; --c5: #c9372c; --c6: #0e8f8f;
+
+  /* type */
+  --font-ui: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.82rem;
+  --fs-md: 0.9rem;
+  --fs-lg: 1.05rem;
+  --fs-xl: 1.35rem;
+  --fs-2xl: 1.7rem;
+
+  /* shape and space */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow: 0 0.375rem 1.25rem rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 1.25rem 3rem rgba(16, 24, 40, 0.18);
+  --gap: 1rem;
+
+  /* sidebar */
+  --sb-w: 17rem;
+  --sb-w-collapsed: 4.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #5b9bff; --brand-ink: #07142b;
+    --brand-strong: color-mix(in srgb, var(--brand) 75%, #fff);
+    --brand-soft: color-mix(in srgb, var(--brand) 18%, #0b1220);
+    --bg: #060a13; --surface: #0b1220; --surface-2: #121a2b; --surface-3: #1b2538; --line: #1c2638;
+    --ink: #e9eef7; --ink-2: #a3b0c4; --ink-3: #6b7a90;
+    --good: #4ccf9e; --good-soft: #0f3326;
+    --warn: #f0be5e; --warn-soft: #3a2c0d;
+    --bad: #f28b80; --bad-soft: #401c18;
+    --violet: #b3a6f5; --violet-soft: #2a2450;
+    --teal: #55d0d0; --teal-soft: #0f3a3a;
+    --shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --brand: #5b9bff; --brand-ink: #07142b;
+  --brand-strong: color-mix(in srgb, var(--brand) 75%, #fff);
+  --brand-soft: color-mix(in srgb, var(--brand) 18%, #0b1220);
+  --bg: #060a13; --surface: #0b1220; --surface-2: #121a2b; --surface-3: #1b2538; --line: #1c2638;
+  --ink: #e9eef7; --ink-2: #a3b0c4; --ink-3: #6b7a90;
+  --good: #4ccf9e; --good-soft: #0f3326;
+  --warn: #f0be5e; --warn-soft: #3a2c0d;
+  --bad: #f28b80; --bad-soft: #401c18;
+  --violet: #b3a6f5; --violet-soft: #2a2450;
+  --teal: #55d0d0; --teal-soft: #0f3a3a;
+  --shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+/* density: the Compact setting tightens spacing */
+:root[data-density="compact"] { --gap: 0.75rem; }

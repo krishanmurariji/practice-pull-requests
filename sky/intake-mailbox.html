@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate Intake Mailbox</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .setting { display: flex; gap: 1rem; align-items: center; padding: 0.875rem 0; border-bottom: 1px solid var(--line); }
+  .setting:last-child { border: 0; padding-bottom: 0; }
+  .setting:first-of-type { padding-top: 0; }
+  .setting p { color: var(--ink-2); font-size: var(--fs-sm); }
+  .status-line { display: flex; gap: 0.625rem; align-items: center; }
+  .status-line .pulse { width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0.3125rem color-mix(in srgb, var(--good) 22%, transparent); }
+</style>
+</head>
+<body data-module="recruitment" data-page="intake-mailbox" data-title="Candidate Intake Mailbox">
+<main id="page">
+  <div data-actions><button class="btn" id="test"><span data-i="send"></span>Send test check</button><button class="btn primary" id="save">Save settings</button></div>
+
+  <div class="grid g-main">
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h3>Mailbox connection</h3></div>
+        <div class="form-grid">
+          <div class="full"><label class="lbl">Mailbox address</label><input class="input" value="careers@arielsoftwares.in"></div>
+          <div><label class="lbl">Provider</label><select class="select"><option>Microsoft Outlook</option><option>Gmail</option><option>IMAP</option></select></div>
+          <div><label class="lbl">Check every</label><select class="select"><option>5 minutes</option><option selected>15 minutes</option><option>1 hour</option></select></div>
+          <div class="full"><label class="lbl">Folder to read</label><input class="input" value="Inbox / Applications"><div class="hint">Mail in other folders is never read.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>What happens to each email</h3></div>
+        <div class="setting"><div class="grow"><b>Create candidates automatically</b><p>Read the resume and the mail body, then add the candidate to the best matching opening.</p></div><label class="switch"><input type="checkbox" checked><span></span></label></div>
+        <div class="setting"><div class="grow"><b>Hold low-confidence mail for review</b><p>Below the threshold, a person decides instead of the system.</p></div><label class="switch"><input type="checkbox" checked><span></span></label></div>
+        <div class="setting"><div class="grow"><b>Confidence threshold</b><p>Mail scoring under this goes to Needs review.</p></div><div style="width:10rem"><input type="range" min="30" max="95" value="70" style="width:100%;accent-color:var(--brand)"></div></div>
+        <div class="setting"><div class="grow"><b>Send an acknowledgement</b><p>Tell the sender their application arrived.</p></div><label class="switch"><input type="checkbox"><span></span></label></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <div class="card-head"><h3>Status</h3></div>
+        <div class="status-line"><span class="pulse"></span><b>Connected</b></div>
+        <dl class="dl" style="margin-top:0.875rem;grid-template-columns:7.5rem 1fr"><dt>Last check</dt><dd>9 Oct 2026, 09:45</dd><dt>Read today</dt><dd>2 emails</dd><dt>This week</dt><dd>9 emails, 5 candidates</dd></dl>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Language model</h3></div>
+        <div class="callout ai"><span data-i="spark"></span><div>Resumes are read by the model running on your own server. Nothing is sent to an outside service.</div></div>
+        <dl class="dl" style="margin-top:0.875rem;grid-template-columns:7.5rem 1fr"><dt>Model</dt><dd class="mono">llama3.1:8b</dd><dt>Average time</dt><dd>3.2 s per resume</dd></dl>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
+  document.getElementById("save").addEventListener("click", function () { toast("Settings saved (demo only)"); });
+  document.getElementById("test").addEventListener("click", function () { toast("Connection works: 2 unread emails found"); });
+})();
+</script>
+<script src="js/shell.js"></script>
+</body>
+</html>

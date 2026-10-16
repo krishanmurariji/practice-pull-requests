@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interviews</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .range { font-size: var(--fs-xs); color: var(--ink-3); margin-left: auto; }
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; align-items: start; }
+  .day { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 0.55rem 0.5rem 0.6rem; min-height: 8.5rem; transition: border-color 0.2s; }
+  .day.today { border-color: var(--sky); background: linear-gradient(180deg, var(--sky-soft), var(--surface) 4rem); }
+  .day h4 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0.15rem 0.5rem; display: flex; gap: 0.3rem; align-items: baseline; font-weight: 600; }
+  .day h4 b { font-size: 0.95rem; color: var(--ink); letter-spacing: 0; font-weight: 600; }
+  .day.today h4 b { color: var(--brand-strong); }
+  /* a slot shows a time and a first name; hover enlarges it and opens the rest */
+  .slot { background: var(--sky-soft); border-left: 3px solid var(--sky); border-radius: 0.55rem; padding: 0.3rem 0.45rem; margin-bottom: 0.3rem; font-size: var(--fs-xs); transition: transform 0.18s ease, box-shadow 0.18s ease; position: relative; }
+  .slot:hover, .slot:focus { transform: scale(1.05); box-shadow: var(--shadow); z-index: 3; outline: none; background: var(--surface); }
+  .slot b { display: block; font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot .peek .in { color: var(--ink-2); padding-top: 0.15rem; }
+  .slot.warn { background: var(--warn-soft); border-color: var(--warn); }
+  .slot.bad { background: var(--bad-soft); border-color: var(--bad); opacity: 0.75; }
+  .slot.good { background: var(--teal-soft); border-color: var(--teal); }
+  .free { color: var(--ink-3); font-size: var(--fs-xs); padding: 0 0.15rem; }
+  @media (max-width: 800px) { .week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .ivr { animation: skyIn 0.3s both; animation-delay: calc(var(--i, 0) * 28ms); }
+  .ivr .dt { width: 2.6rem; text-align: center; border-radius: 0.65rem; background: var(--sky-soft); color: var(--brand-strong); padding: 0.22rem 0; line-height: 1.05; flex: none; }
+  .ivr .dt b { display: block; font-size: 0.9rem; font-weight: 600; }
+  .ivr .dt small { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ivr .tm { font-size: var(--fs-sm); color: var(--ink-2); white-space: nowrap; width: 5.2rem; flex: none; }
+  .ivr .rx svg.i { width: 0.8rem; height: 0.8rem; }
+  .ivr .rx .md { display: inline-flex; align-items: center; gap: 0.3rem; }
+</style>
+</head>
+<body data-module="recruitment" data-page="interviews" data-title="Interview">
+<main id="page">
+  <div data-actions>
+    <button class="xbtn" id="cal" aria-label="Connect calendar"><span data-i="calendar"></span><span class="xl">Connect calendar</span></button>
+    <button class="xbtn primary" id="new" aria-label="Schedule interview"><span data-i="plus"></span><span class="xl">Schedule interview</span></button>
+  </div>
+
+  <div class="sub-bar"><div id="tabs"></div><span class="range" id="range"></span></div>
+  <div id="panel" class="panel"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var I = DEMO.interviews, DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  var cls = { Scheduled: "", Completed: "good", Cancelled: "bad", "Feedback pending": "warn" };
+  var tone = { Scheduled: "info", Completed: "good", Cancelled: "bad", "Feedback pending": "warn" };
+  var by = function (st) { return I.filter(function (i) { return st.indexOf(i.status) >= 0; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); };
+  var TABS = [["week", "Week"], ["upcoming", "Upcoming", by(["Scheduled"]).length], ["feedback", "Feedback due", by(["Feedback pending"]).length], ["history", "History", by(["Completed", "Cancelled"]).length]];
+  var cur = (location.hash || "#week").slice(1); if (!TABS.some(function (t) { return t[0] === cur; })) { cur = "week"; }
+
+  function week() {
+    var html = '';
+    for (var d = 0; d < 7; d++) {
+      var iso = "2026-10-" + (d + 5 < 10 ? "0" : "") + (d + 5);
+      var items = I.filter(function (i) { return i.date === iso; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+      html += '<div class="day' + (iso === DEMO.today ? " today" : "") + '"><h4>' + DAYS[d] + ' <b>' + (d + 5) + '</b></h4>' +
+        (items.map(function (i) { return '<div class="slot hov ' + cls[i.status] + '" tabindex="0"><b>' + i.time + ' · ' + DEMO.cand(i.cand).name.split(" ")[0] + '</b><div class="peek flow"><div class="in">' + i.round + '<br>' + i.mode + ' · ' + i.dur + '<br>' + i.who.join(", ") + '</div></div></div>'; }).join("") || '<span class="free">Free</span>') + '</div>';
+    }
+    return '<div class="week">' + html + '</div>';
+  }
+  function rows(list, empty) {
+    if (!list.length) { return '<div class="card empty">' + empty + '</div>'; }
+    return list.map(function (i, n) {
+      var c = DEMO.cand(i.cand);
+      return '<div class="lrow ivr hov" style="--i:' + n + '"><div class="dt"><b>' + dayOf(i.date) + '</b><small>' + monOf(i.date) + '</small></div>' +
+        '<div class="main"><b>' + c.name + '</b><small>' + i.round + ' · ' + DEMO.job(c.job).title + '</small></div>' +
+        '<span class="tm">' + i.time + ' · ' + i.dur.replace(" min", "m") + '</span>' + chip(i.status, tone[i.status], true) +
+        '<div class="rx"><span class="md">' + (i.mode === "Video call" ? icon("video") : "") + i.mode + '</span><span class="opt">' + avatarStack(i.who) + '</span>' +
+        (i.status === "Feedback pending" ? '<button class="btn sm primary">Add feedback</button>' : '<a class="btn sm" href="candidate-profile.html?id=' + c.id + '">Open</a>') + '</div></div>';
+    }).join("");
+  }
+  var panels = {
+    week: week,
+    upcoming: function () { return rows(by(["Scheduled"]), "Nothing scheduled."); },
+    feedback: function () { return rows(by(["Feedback pending"]), "All feedback is in. Nice."); },
+    history: function () { return rows(by(["Completed", "Cancelled"]).reverse(), "No past interviews.") ; }
+  };
+  function show() {
+    document.getElementById("tabs").innerHTML = pills(TABS, cur);
+    document.getElementById("range").textContent = cur === "week" ? "5 to 11 Oct 2026" : "";
+    var p = document.getElementById("panel"); p.innerHTML = panels[cur](); p.classList.remove("panel"); void p.offsetWidth; p.classList.add("panel");
+  }
+  document.getElementById("tabs").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (b) { cur = b.dataset.t; try { history.replaceState(null, "", "#" + cur); } catch (x) {} show(); } });
+  document.getElementById("cal").addEventListener("click", function () { toast("Calendar sync is not part of this prototype"); });
+  document.getElementById("new").addEventListener("click", function () {
+    openDrawer({ title: "Schedule interview", body: '<div class="form-grid"><div class="full"><label class="lbl">Candidate</label><select class="select">' + DEMO.candidates.filter(function (c) { return c.stage === "test" || c.stage === "interview" || c.stage === "initial"; }).map(function (c) { return "<option>" + c.name + "</option>"; }).join("") + '</select></div><div><label class="lbl">Date</label><input class="input" type="date" value="2026-10-12"></div><div><label class="lbl">Time</label><input class="input" type="time" value="11:00"></div><div><label class="lbl">Round</label><input class="input" placeholder="Technical round 1"></div><div><label class="lbl">Mode</label><select class="select"><option>Video call</option><option>On-site</option><option>Phone</option></select></div><div class="full"><label class="lbl">Interviewers</label><select class="select" multiple style="height:6rem">' + DEMO.team.map(function (t) { return "<option>" + t + "</option>"; }).join("") + '</select></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Send invites</button>' });
+  });
+  show();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stages</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/sky.css">
+<style>
+  .srow { animation: skyIn 0.3s both; animation-delay: calc(var(--i, 0) * 30ms); }
+  .srow .grip { color: var(--ink-3); cursor: grab; opacity: 0; transition: opacity 0.15s; flex: none; }
+  .srow:hover .grip { opacity: 1; }
+  .srow .seq { width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--sky-soft); color: var(--brand-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-xs); flex: none; }
+  .srow .rx .mg { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .srow .rx .btn.icon { width: 1.6rem; height: 1.6rem; }
+  .srow.drag { opacity: 0.4; }
+  .hintline { font-size: var(--fs-xs); color: var(--ink-3); margin: 0.2rem 0.3rem 0.6rem; }
+</style>
+</head>
+<body data-module="recruitment" data-page="stages" data-title="Stages">
+<main id="page">
+  <div data-actions><button class="xbtn primary" id="new" aria-label="Add stage"><span data-i="plus"></span><span class="xl">Add stage</span></button></div>
+  <div class="sub-bar"><button class="selbtn" id="jobBtn" aria-haspopup="menu"><span class="t" id="jobName"></span><span class="n" id="jobN"></span><span data-i="down"></span></button><span class="hintline" style="margin:0">Drag the handle to reorder</span></div>
+  <div id="rows" class="panel"></div>
+</main>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+  var sel = DEMO.stageSetup[0].job;
+  function setup(j) { return DEMO.stageSetup.filter(function (x) { return x.job === j; })[0]; }
+  function rows() {
+    var s = setup(sel), r = document.getElementById("rows");
+    document.getElementById("jobName").textContent = DEMO.job(sel).title; document.getElementById("jobN").textContent = s.stages.length;
+    r.innerHTML = s.stages.map(function (st, i) {
+      var mg = st[2].split(", ");
+      return '<div class="lrow srow hov" style="--i:' + i + '"><span class="grip">' + icon("menu", "sm") + '</span><span class="seq">' + (i + 1) + '</span><div class="main"><b>' + st[0] + '</b></div>' + stageChip(st[1]) +
+        '<div class="rx"><span class="mg">' + avatarStack(mg) + st[2] + '</span><button class="btn sm icon ghost" aria-label="Edit">' + icon("edit", "sm") + '</button><button class="btn sm icon ghost" aria-label="Delete">' + icon("trash", "sm") + '</button></div></div>';
+    }).join("");
+    r.classList.remove("panel"); void r.offsetWidth; r.classList.add("panel");
+  }
+  document.getElementById("jobBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    skyMenu(this, '<h4>Recruitment</h4>' + DEMO.stageSetup.map(function (s) { return '<button class="item' + (s.job === sel ? " on" : "") + '" data-pick="' + s.job + '">' + DEMO.job(s.job).title + '<span class="tail">' + s.stages.length + '</span></button>'; }).join(""), function (v) { sel = +v; rows(); }, 240);
+  });
+  document.getElementById("new").addEventListener("click", function () {
+    openDrawer({ title: "Add stage", body: '<div class="form-grid"><div class="full"><label class="lbl">Stage name <span class="req">*</span></label><input class="input"></div><div><label class="lbl">Stage type</label><select class="select">' + DEMO.stages.map(function (s) { return "<option>" + s.label + "</option>"; }).join("") + '</select></div><div><label class="lbl">Position in order</label><input class="input" type="number" value="4"></div><div class="full"><label class="lbl">Stage managers</label><select class="select" multiple style="height:6rem">' + DEMO.team.map(function (t) { return "<option>" + t + "</option>"; }).join("") + '</select></div></div>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close>Save stage</button>' });
+  });
+  rows();
+})();
+</script>
+<script src="js/shell.js"></script>
+<script>fitX();</script>
+</body>
+</html>
