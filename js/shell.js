@@ -85,9 +85,26 @@
   if (actions) { var ha = document.getElementById("head-actions"); while (actions.firstChild) { ha.appendChild(actions.firstChild); } }
   var sb = document.getElementById("sb"), menu = document.getElementById("sbMenu");
 
+  /* ---- pin button: keeps the sidebar open with names (and moves the page over); unpinned = the slim strip that opens on hover ---- */
+  var pinned = store("ariel-sb-pinned") === "1" && !small;
+  var tgl = document.createElement("button");
+  tgl.className = "sb-toggle"; tgl.id = "sbToggle"; tgl.type = "button";
+  tgl.innerHTML = icon("right", "sm");
+  sb.parentNode.appendChild(tgl);
+  function setPinned(on, quiet) {
+    pinned = on; app.classList.toggle("pinned", on); sb.classList.toggle("expanded", on);
+    tgl.setAttribute("aria-pressed", on ? "true" : "false");
+    tgl.setAttribute("aria-label", on ? "Collapse sidebar" : "Keep sidebar open"); tgl.title = on ? "Collapse sidebar" : "Keep sidebar open";
+    if (!quiet) { store("ariel-sb-pinned", on ? "1" : null); }
+    setTimeout(fade, 240);
+  }
+  tgl.addEventListener("click", function () { closePop(); setPinned(!pinned); });
+  tgl.addEventListener("mouseenter", function () { clearTimeout(leaveTimer); expand(true); });
+  tgl.addEventListener("mouseleave", function () { leaveTimer = setTimeout(function () { expand(false); }, 140); });
+
   /* ---- open on hover (not while a popover is open, and not on small screens) ---- */
   var leaveTimer = null;
-  function expand(on) { if (small) { return; } if (on && pop) { return; } sb.classList.toggle("expanded", on); if (on) { setTimeout(fade, 220); } }
+  function expand(on) { if (small || pinned) { return; } if (on && pop) { return; } sb.classList.toggle("expanded", on); if (on) { setTimeout(fade, 220); } }
   sb.addEventListener("mouseenter", function () { clearTimeout(leaveTimer); expand(true); });
   sb.addEventListener("mouseleave", function () { leaveTimer = setTimeout(function () { expand(false); }, 140); });
   sb.addEventListener("focusin", function () { expand(true); });
@@ -99,9 +116,10 @@
     menu.style.setProperty("--fade-bottom", bottom ? "2.125rem" : "0px");
   }
   menu.addEventListener("scroll", fade, { passive: true });
-  window.addEventListener("resize", function () { small = window.innerWidth <= 720; fade(); closePop(); });
+  window.addEventListener("resize", function () { var was = small; small = window.innerWidth <= 720; if (small && !was && pinned) { setPinned(false, true); } fade(); closePop(); });
   fade();
   var cur = menu.querySelector(".mod-btn.on"); if (cur) { menu.scrollTop = Math.max(0, cur.offsetTop - 120); fade(); }
+  if (pinned) { setPinned(true, true); } else { setPinned(false, true); }
 
   /* ---- popovers ---- */
   var pop = null;   // { kind, anchor, el }
@@ -148,7 +166,7 @@
   function openPop(kind, anchor) {
     if (pop && pop.kind === kind) { closePop(); return; }
     closePop();
-    sb.classList.remove("expanded");           // keep the strip slim while a menu is open
+    if (!pinned) { sb.classList.remove("expanded"); }           // keep the strip slim while a menu is open
     var el = document.createElement("div"); el.className = "pop"; el.setAttribute("role", "menu"); el.innerHTML = popHtml(kind);
     document.body.appendChild(el); place(el, anchor); pop = { kind: kind, anchor: anchor, el: el };
   }
