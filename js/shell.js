@@ -317,22 +317,59 @@
   setInterval(function () { [].forEach.call(document.querySelectorAll("[data-clock]"), function (c) { if (clockStart()) { c.textContent = clockText(); } }); }, 1000);
 
   /* command palette */
+  /* ---- search (Ctrl K): one search for the whole app ---- */
+  function searchIndex() {
+    var idx = [], J = DEMO.job, cand = function (id) { return DEMO.candidates.filter(function (c) { return c.id === id; })[0]; };
+    MODULES.forEach(function (m) { m.items.forEach(function (i) { if (i.href) { idx.push({ k: "Pages", ic: "list", t: i.label, s: m.label, h: i.label + " " + m.label, href: i.href }); } }); });
+    DEMO.candidates.forEach(function (c) { var j = J(c.job); idx.push({ k: "Candidates", ic: "users", t: c.name, s: (j ? j.title : "") + " · " + c.stage, h: [c.name, c.email, c.phone, j && j.title, c.stage, c.source, c.loc, (c.skills || []).join(" ")].join(" "), href: "candidate-profile.html?id=" + c.id }); });
+    DEMO.jobs.forEach(function (j) { idx.push({ k: "Jobs", ic: "briefcase", t: j.title, s: j.dept + " · " + j.loc, h: [j.title, j.dept, j.loc, j.type, j.status, (j.skills || []).join(" "), (j.managers || []).join(" ")].join(" "), href: "pipeline.html?job=" + j.id }); });
+    DEMO.interviews.forEach(function (iv) { var c = cand(iv.cand); idx.push({ k: "Interviews", ic: "calendar", t: (c ? c.name : "Candidate") + " · " + iv.round, s: iv.date + " " + iv.time + " · " + iv.status, h: [c && c.name, iv.round, iv.date, iv.mode, iv.status, (iv.who || []).join(" ")].join(" "), href: "interviews.html" }); });
+    DEMO.surveys.forEach(function (sv) { idx.push({ k: "Surveys", ic: "list", t: sv.name, s: sv.questions.length + " questions", h: sv.name + " " + sv.questions.map(function (q) { return q.q; }).join(" "), href: "survey.html" }); });
+    (DEMO.skillZones || []).forEach(function (z) { idx.push({ k: "Skill zones", ic: "star", t: z.name, s: z.note, h: z.name + " " + z.note, href: "skill-zone.html" }); });
+    (DEMO.intake || []).forEach(function (m) { idx.push({ k: "Mailbox", ic: "mail", t: m.subject, s: m.from, h: m.subject + " " + m.from + " " + m.job, href: "intake-mailbox.html" }); });
+    return idx;
+  }
   function openPalette() {
-    var all = [];
-    MODULES.forEach(function (m) { m.items.forEach(function (i) { all.push({ t: i.label, g: m.label, href: i.href || "#", k: "Page" }); }); });
-    DEMO.candidates.forEach(function (c) { all.push({ t: c.name, g: DEMO.job(c.job).title, href: "candidate-profile.html?id=" + c.id, k: "Candidate" }); });
-    DEMO.jobs.forEach(function (j) { all.push({ t: j.title, g: j.dept, href: "pipeline.html?job=" + j.id, k: "Job" }); });
+    var all = searchIndex(), ORDER = ["Pages", "Candidates", "Jobs", "Interviews", "Surveys", "Skill zones", "Mailbox"];
+    var pageQ = document.getElementById("q"), pageName = pageTitle || "this page";
+    var esc2 = function (x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
     var back = document.createElement("div"); back.className = "palette-back";
-    back.innerHTML = '<div class="palette"><input placeholder="Type to search pages, candidates and jobs" aria-label="Search"><ul></ul></div>';
+    back.innerHTML = '<div class="palette"><input placeholder="Search candidates, jobs, interviews, surveys and pages" aria-label="Search"><ul></ul></div>';
     document.body.appendChild(back);
-    var input = back.querySelector("input"), ul = back.querySelector("ul");
+    var input = back.querySelector("input"), ul = back.querySelector("ul"), sel = 0;
+    function mark(text, terms) {
+      var out = esc2(text);
+      terms.forEach(function (t) { out = out.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/&/g, "&amp;") + ")", "gi"), "<mark>$1</mark>"); });
+      return out;
+    }
+    function rows() { return [].slice.call(ul.querySelectorAll("a")); }
+    function paint() { rows().forEach(function (a, i) { a.classList.toggle("sel", i === sel); if (i === sel) { a.scrollIntoView({ block: "nearest" }); } }); }
     function draw() {
-      var q = input.value.toLowerCase(), rows = all.filter(function (r) { return !q || (r.t + " " + r.g).toLowerCase().indexOf(q) >= 0; }).slice(0, 14);
-      ul.innerHTML = rows.length ? rows.map(function (r, i) { return '<li><a href="' + r.href + '" class="' + (i === 0 ? "sel" : "") + '">' + icon(r.k === "Candidate" ? "users" : r.k === "Job" ? "briefcase" : "list") + '<span>' + r.t + '</span><small>' + r.k + " in " + r.g + '</small></a></li>'; }).join("") : '<li class="empty">Nothing matches</li>';
+      var q = input.value.trim().toLowerCase(), terms = q ? q.split(/\s+/) : [], html = "", limit = q ? 6 : 0;
+      if (q && pageQ) { html += '<li class="grp">On this page</li><li><a href="#" data-act="filter">' + icon("filter") + '<span>Filter ' + esc2(pageName) + ' for “' + esc2(input.value.trim()) + '”</span><small>Applies to the list you are viewing</small></a></li>'; }
+      ORDER.forEach(function (g) {
+        var hits = all.filter(function (r) { return r.k === g && (!terms.length ? true : terms.every(function (t) { return r.h.toLowerCase().indexOf(t) >= 0; })); });
+        if (!terms.length) { hits = hits.slice(0, g === "Pages" ? 6 : g === "Candidates" ? 4 : g === "Jobs" ? 3 : 0); }
+        if (!hits.length) { return; }
+        var total = hits.length; if (limit) { hits = hits.slice(0, limit); }
+        html += '<li class="grp">' + g + (q ? ' <em>' + total + '</em>' : "") + '</li>' + hits.map(function (r) { return '<li><a href="' + r.href + '">' + icon(r.ic) + '<span>' + mark(r.t, terms) + '</span><small>' + mark(r.s, terms) + '</small></a></li>'; }).join("");
+      });
+      ul.innerHTML = html || '<li class="empty">Nothing matches “' + esc2(input.value.trim()) + '”</li>'; sel = 0; paint();
     }
     input.addEventListener("input", draw); draw(); input.focus();
+    ul.addEventListener("click", function (e) {
+      var a = e.target.closest("a"); if (!a) { return; }
+      if (a.dataset.act === "filter") { e.preventDefault(); pageQ.value = input.value.trim(); pageQ.dispatchEvent(new Event("input", { bubbles: true })); back.remove(); }
+    });
+    ul.addEventListener("mousemove", function (e) { var a = e.target.closest("a"), r = rows(); if (a && r.indexOf(a) !== sel) { sel = r.indexOf(a); paint(); } });
     back.addEventListener("click", function (e) { if (e.target === back) { back.remove(); } });
-    input.addEventListener("keydown", function (e) { if (e.key === "Enter") { var a = ul.querySelector("a"); if (a) { go(a.getAttribute("href")); } } if (e.key === "Escape") { back.remove(); } });
+    input.addEventListener("keydown", function (e) {
+      var r = rows();
+      if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(r.length - 1, sel + 1); paint(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(0, sel - 1); paint(); }
+      else if (e.key === "Enter") { e.preventDefault(); if (r[sel]) { r[sel].click(); } }
+      else if (e.key === "Escape") { back.remove(); }
+    });
   }
 
   /* layout: the Metronic layout is the default. Appearance > Layout, or ?layout=classic / ?layout=demo1, switches it. */

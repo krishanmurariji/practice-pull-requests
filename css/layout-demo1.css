@@ -81,3 +81,6 @@ a.d1-sub:hover { background: var(--surface-2); color: var(--ink); text-decoratio
   .d1-ms { display: grid; }
   .d1-acts { display: none; }
 }
+
+/* one search for everything: the page's own search box is not shown in the top bar */
+.d1-acts .xsearch, .d1-acts label.xsearch { display: none !important; }
