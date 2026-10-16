@@ -59,16 +59,25 @@
     var p = store("ariel-photo") || (DEMO.me && DEMO.me.photo);
     return p ? '<img class="av av-img round" src="' + p + '" alt="' + DEMO.me.name + '">' : avatar(DEMO.me.name, "round");
   }
-  var nav = mod.items.length ? mod.items.map(function (it) {
-    return it.href ? '<a class="d1-link' + (it.id === pageId ? " on" : "") + '" href="' + it.href + '">' + it.label + '</a>' : '<span class="d1-link off" title="Not designed in this prototype">' + it.label + '</span>';
-  }).join("") : "";
   var top = document.createElement("header");
   top.className = "d1-top";
-  top.innerHTML = '<button type="button" class="d1-burger" data-d1="burger" aria-label="Open menu">' + icon("menu", "lg") + '</button><nav class="d1-nav" aria-label="' + mod.label + ' pages">' + nav + '</nav>' +
-    '<div class="d1-tools"><button type="button" class="d1-ib" data-do="search" aria-label="Search" title="Search (Ctrl K)">' + icon("search") + '</button>' +
+  top.innerHTML = '<div class="d1-left"><button type="button" class="d1-burger" data-d1="burger" aria-label="Open menu">' + icon("menu", "lg") + '</button><div class="d1-title" id="d1Title"></div></div>' +
+    '<button type="button" class="d1-search" data-do="search" aria-label="Search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
+    '<div class="d1-tools"><div class="d1-acts" id="d1Acts"></div>' +
+    '<button type="button" class="d1-ib d1-ms" data-do="search" aria-label="Search" title="Search">' + icon("search") + '</button>' +
     '<button type="button" class="d1-ib" data-pop="notes" aria-label="Notifications" title="Notifications">' + iconLine("bell") + (unread ? '<span class="badge">' + unread + '</span>' : "") + '</button>' +
     '<button type="button" class="d1-me" data-pop="user" aria-label="Your menu" title="' + DEMO.me.name + '">' + meFace() + '</button></div>';
   mainEl.insertBefore(top, content);
+  (function () {
+    var ph = content.querySelector(".page-head"), title = document.getElementById("d1Title"), acts = document.getElementById("d1Acts");
+    if (ph) {
+      var block = ph.firstElementChild; if (block) { title.appendChild(block); }
+      var ha = ph.querySelector("#head-actions"); if (ha) { acts.appendChild(ha); }
+      ph.remove();
+    } else {
+      title.innerHTML = "<h1>" + (body.dataset.title || mod.label) + "</h1>";
+    }
+  })();
 
   /* ---- folded / open ---- */
   var folded = store("ariel-d1-folded") === "1" && !small;
