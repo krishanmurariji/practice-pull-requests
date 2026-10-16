@@ -277,7 +277,7 @@
     var what = d.dataset.do;
     if (what === "company" || what === "look") { swapPop(what); return; }
     if (what === "theme") { store("ariel-theme", isDark() ? "light" : "dark"); applyLook(); refreshPop(); return; }
-    if (what === "search") { closePop(); openPalette(); return; }
+    if (what === "search") { closePop(); focusSearch(); return; }
     if (what === "reset-look") { var hadInitials = store("ariel-avatars"); ["ariel-theme", "ariel-accent", "ariel-density", "ariel-lang", "ariel-scale", "ariel-avatars"].forEach(function (k) { store(k, null); }); if (hadInitials) { location.reload(); return; } applyLook(); refreshPop(); toast("Appearance reset"); }
     if (what === "clock") { toggleClock(); }
     if (what === "photo") { document.getElementById("photoFile").click(); }
@@ -304,7 +304,7 @@
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { closePop(); }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); if (!document.querySelector(".palette-back")) { openPalette(); } }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); focusSearch(); }
   });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyLook);
 
@@ -329,6 +329,7 @@
     (DEMO.intake || []).forEach(function (m) { idx.push({ k: "Mailbox", ic: "mail", t: m.subject, s: m.from, h: m.subject + " " + m.from + " " + m.job, href: "intake-mailbox.html" }); });
     return idx;
   }
+  function focusSearch() { var i = document.getElementById("d1q"); if (i) { i.focus(); i.select(); } else if (!document.querySelector(".palette-back")) { openPalette(); } }
   function openPalette() {
     var all = searchIndex(), ORDER = ["Pages", "Candidates", "Jobs", "Interviews", "Surveys", "Skill zones", "Mailbox"];
     var pageQ = document.getElementById("q"), pageName = pageTitle || "this page";

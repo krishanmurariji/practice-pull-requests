@@ -62,9 +62,8 @@
   var top = document.createElement("header");
   top.className = "d1-top";
   top.innerHTML = '<div class="d1-left"><button type="button" class="d1-burger" data-d1="burger" aria-label="Open menu">' + icon("menu", "lg") + '</button><div class="d1-title" id="d1Title"></div></div>' +
-    '<button type="button" class="d1-search" data-do="search" aria-label="Search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
+    '<label class="d1-search">' + icon("search", "sm") + '<input id="d1q" type="search" placeholder="Search" aria-label="Search this page" autocomplete="off"></label>' +
     '<div class="d1-tools"><div class="d1-acts" id="d1Acts"></div>' +
-    '<button type="button" class="d1-ib d1-ms" data-do="search" aria-label="Search" title="Search">' + icon("search") + '</button>' +
     '<button type="button" class="d1-ib" data-pop="notes" aria-label="Notifications" title="Notifications">' + iconLine("bell") + (unread ? '<span class="badge">' + unread + '</span>' : "") + '</button>' +
     '<button type="button" class="d1-me" data-pop="user" aria-label="Your menu" title="' + DEMO.me.name + '">' + meFace() + '</button></div>';
   mainEl.insertBefore(top, content);
@@ -78,6 +77,27 @@
       title.innerHTML = "<h1>" + (body.dataset.title || mod.label) + "</h1>";
     }
   })();
+
+  /* ---- the search in the bar works on the open page only ---- */
+  var qBox = document.getElementById("d1q"), pageQ = document.getElementById("q");
+  var ROWS = "#page tbody tr, #page .kcard, #page .q, #page .tpl, #page .stage-row, #page .zone, #page .ev";
+  qBox.placeholder = pageQ ? (pageQ.getAttribute("placeholder") || "Search") : "Search " + (body.dataset.title || "this page").toLowerCase();
+  function filterRows() {
+    var terms = qBox.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    [].forEach.call(document.querySelectorAll(ROWS), function (el) {
+      var ok = !terms.length || terms.every(function (t) { return el.textContent.toLowerCase().indexOf(t) >= 0; });
+      el.classList.toggle("d1-hide", !ok);
+    });
+  }
+  qBox.addEventListener("input", function () {
+    if (pageQ) { pageQ.value = qBox.value; pageQ.dispatchEvent(new Event("input", { bubbles: true })); } else { filterRows(); }
+  });
+  qBox.addEventListener("keydown", function (e) { if (e.key === "Escape") { qBox.value = ""; qBox.dispatchEvent(new Event("input")); qBox.blur(); } });
+  /* a page with nothing to search keeps the space but not the box */
+  function syncBox() { qBox.parentNode.style.visibility = (pageQ || document.querySelector(ROWS)) ? "" : "hidden"; if (!pageQ && qBox.value) { filterRows(); } }
+  new MutationObserver(syncBox).observe(document.getElementById("page") || content, { childList: true, subtree: true });
+  syncBox();
+  setTimeout(syncBox, 600);
 
   /* ---- folded / open ---- */
   var folded = store("ariel-d1-folded") === "1" && !small;
