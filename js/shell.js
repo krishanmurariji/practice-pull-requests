@@ -50,13 +50,13 @@
     return MODULES.map(function (m) {
       var current = m.id === moduleId;
       if (!m.items.length) {
-        return '<a class="mod-btn' + (current ? " on" : "") + '" href="' + (m.href || "#") + '" aria-label="' + m.label + '">' + iconLine(m.icon) + '<span class="lbl">' + m.label + '</span></a>';
+        return '<a class="mod-btn' + (current ? " on" : "") + '" href="' + (m.href || "#") + '" data-tip="' + m.label + '" aria-label="' + m.label + '">' + iconLine(m.icon) + '<span class="lbl">' + m.label + '</span></a>';
       }
       var subs = m.items.map(function (it) {
         var on = current && it.id === pageId;
         return '<a class="sub' + (on ? " on" : "") + '" href="' + (it.href || "#") + '"' + (it.href ? "" : ' title="Not designed in this prototype"') + '>' + it.label + '</a>';
       }).join("");
-      return '<div class="mod' + (current ? " open" : "") + '" data-mod="' + m.id + '"><button class="mod-btn' + (current ? " on" : "") + '" data-modbtn="' + m.id + '" aria-label="' + m.label + '">' + iconLine(m.icon) + '<span class="lbl">' + m.label + '</span>' + icon("right", "chev") + '</button><div class="subs">' + subs + '</div></div>';
+      return '<div class="mod' + (current ? " open" : "") + '" data-mod="' + m.id + '"><button class="mod-btn' + (current ? " on" : "") + '" data-modbtn="' + m.id + '" data-tip="' + m.label + '" aria-label="' + m.label + '">' + iconLine(m.icon) + '<span class="lbl">' + m.label + '</span>' + icon("right", "chev") + '</button><div class="subs">' + subs + '</div></div>';
     }).join("");
   }
   function userBtnHtml() {
@@ -64,9 +64,9 @@
     return meAvatar("round") + '<i class="status' + (on ? " live" : "") + '"></i><span class="who"><b>' + DEMO.me.name + '</b><small>' + (on ? "Clocked in " + '<span data-clock>' + clockText() + '</span>' : DEMO.me.role) + '</small></span>';
   }
   function sidebarHtml() {
-    return '<div class="sb-top"><button class="sb-bell" data-pop="notes" aria-label="Notifications">' + iconLine("bell", "lg") + (unread ? '<span class="badge">' + unread + '</span>' : "") + '</button><img class="sb-logo-img" src="assets/ariel-logo.webp" alt="Ariel Software Solutions"></div>' +
+    return '<div class="sb-top"><a class="sb-emblem" href="index.html" aria-label="Ariel HR"><span class="emblem" style="--e:2.125rem"></span></a></div>' +
       '<nav class="sb-menu" id="sbMenu" aria-label="Modules">' + menuHtml() + '</nav>' +
-      '<div class="sb-bottom"><button class="sb-user" id="sbUser" data-pop="user" aria-label="Your menu">' + userBtnHtml() + '</button></div>';
+      '<div class="sb-bottom"><button class="sb-bell" data-pop="notes" data-tip="Notifications" aria-label="Notifications">' + iconLine("bell", "lg") + (unread ? '<span class="badge">' + unread + '</span>' : "") + '</button><button class="sb-user" id="sbUser" data-pop="user" data-tip="' + DEMO.me.name + '" aria-label="Your menu">' + userBtnHtml() + '</button></div>';
   }
 
   /* ---- page head: just the menu name and the page's action buttons ---- */
@@ -75,39 +75,33 @@
     : '<h1>' + pageTitle + '</h1>';
   var head = body.dataset.nohead ? "" : '<div class="page-head' + (body.dataset.compact ? " compact" : "") + (body.dataset.ruled ? " ruled" : "") + '">' + titleHtml + '<div class="actions" id="head-actions"></div></div>';
 
+  /* ---- the module's pages as tabs across the top of the page (Metronic layout 3) ---- */
+  var tabsHtml = !mod.items.length ? "" : '<nav class="tabbar" aria-label="' + mod.label + ' pages"><span class="tb-mod">' + iconLine(mod.icon) + mod.label + '</span><div class="tb-tabs">' +
+    mod.items.map(function (it) {
+      return it.href ? '<a class="tb' + (it.id === pageId ? " on" : "") + '" href="' + it.href + '">' + it.label + '</a>' : '<span class="tb off" title="Not designed in this prototype">' + it.label + '</span>';
+    }).join("") + '</div></nav>';
+
   /* ---- assemble ---- */
   var app = document.createElement("div");
   app.className = "app";
-  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + head + '</div></div>';
+  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + tabsHtml + head + '</div></div>';
   body.insertBefore(app, main);
   document.getElementById("content").appendChild(main);
   /* move the real buttons (not a copy), so the click handlers the page attached keep working */
   if (actions) { var ha = document.getElementById("head-actions"); while (actions.firstChild) { ha.appendChild(actions.firstChild); } }
   var sb = document.getElementById("sb"), menu = document.getElementById("sbMenu");
 
-  /* ---- pin button: keeps the sidebar open with names (and moves the page over); unpinned = the slim strip that opens on hover ---- */
-  var pinned = store("ariel-sb-pinned") === "1" && !small;
-  var tgl = document.createElement("button");
-  tgl.className = "sb-toggle"; tgl.id = "sbToggle"; tgl.type = "button";
-  tgl.innerHTML = icon("right", "sm");
-  sb.parentNode.appendChild(tgl);
-  function setPinned(on, quiet) {
-    pinned = on; app.classList.toggle("pinned", on); sb.classList.toggle("expanded", on);
-    tgl.setAttribute("aria-pressed", on ? "true" : "false");
-    tgl.setAttribute("aria-label", on ? "Collapse sidebar" : "Keep sidebar open"); tgl.title = on ? "Collapse sidebar" : "Keep sidebar open";
-    if (!quiet) { store("ariel-sb-pinned", on ? "1" : null); }
-    setTimeout(fade, 240);
+  /* ---- the strip is icon-only (Metronic layout 3): names show as a dark tag on hover; on a small screen the burger opens it with names ---- */
+  var leaveTimer = null, tipEl = null;
+  function expand(on) { if (!small) { return; } sb.classList.toggle("expanded", on); }
+  function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; } }
+  function showTip(el) {
+    hideTip(); if (small || !el.dataset.tip) { return; }
+    var r = el.getBoundingClientRect(); tipEl = document.createElement("div"); tipEl.className = "tip"; tipEl.textContent = el.dataset.tip; document.body.appendChild(tipEl);
+    tipEl.style.left = (r.right + 10) + "px"; tipEl.style.top = (r.top + r.height / 2 - tipEl.offsetHeight / 2) + "px";
   }
-  tgl.addEventListener("click", function () { closePop(); setPinned(!pinned); });
-  tgl.addEventListener("mouseenter", function () { clearTimeout(leaveTimer); expand(true); });
-  tgl.addEventListener("mouseleave", function () { leaveTimer = setTimeout(function () { expand(false); }, 140); });
-
-  /* ---- open on hover (not while a popover is open, and not on small screens) ---- */
-  var leaveTimer = null;
-  function expand(on) { if (small || pinned) { return; } if (on && pop) { return; } sb.classList.toggle("expanded", on); if (on) { setTimeout(fade, 220); } }
-  sb.addEventListener("mouseenter", function () { clearTimeout(leaveTimer); expand(true); });
-  sb.addEventListener("mouseleave", function () { leaveTimer = setTimeout(function () { expand(false); }, 140); });
-  sb.addEventListener("focusin", function () { expand(true); });
+  document.addEventListener("mouseover", function (e) { var t = e.target.closest(".sb [data-tip]"); if (t) { showTip(t); } else { hideTip(); } });
+  document.addEventListener("click", hideTip, true);
 
   /* ---- fade at the ends of the scrolling icons, only where more is hidden ---- */
   function fade() {
@@ -116,10 +110,9 @@
     menu.style.setProperty("--fade-bottom", bottom ? "2.125rem" : "0px");
   }
   menu.addEventListener("scroll", fade, { passive: true });
-  window.addEventListener("resize", function () { var was = small; small = window.innerWidth <= 720; if (small && !was && pinned) { setPinned(false, true); } fade(); closePop(); });
+  window.addEventListener("resize", function () { small = window.innerWidth <= 720; fade(); closePop(); });
   fade();
   var cur = menu.querySelector(".mod-btn.on"); if (cur) { menu.scrollTop = Math.max(0, cur.offsetTop - 120); fade(); }
-  if (pinned) { setPinned(true, true); } else { setPinned(false, true); }
 
   /* ---- popovers ---- */
   var pop = null;   // { kind, anchor, el }
@@ -166,7 +159,7 @@
   function openPop(kind, anchor) {
     if (pop && pop.kind === kind) { closePop(); return; }
     closePop();
-    if (!pinned) { sb.classList.remove("expanded"); }           // keep the strip slim while a menu is open
+    sb.classList.remove("expanded");           // keep the strip slim while a menu is open
     var el = document.createElement("div"); el.className = "pop"; el.setAttribute("role", "menu"); el.innerHTML = popHtml(kind);
     document.body.appendChild(el); place(el, anchor); pop = { kind: kind, anchor: anchor, el: el };
   }
@@ -181,6 +174,11 @@
     if (!t.closest(".pop")) { closePop(); }
 
     var mb = t.closest("[data-modbtn]");
+    if (mb && !small) {
+      var mm2 = MODULES.filter(function (x) { return x.id === mb.dataset.modbtn; })[0], first = mm2 && mm2.items.filter(function (i) { return i.href; })[0];
+      if (first) { location.href = first.href; } else { toast(mm2.label + ": these pages are not designed in this prototype yet"); }
+      return;
+    }
     if (mb) {
       var box = mb.parentNode, wasOpen = box.classList.contains("open");
       [].forEach.call(document.querySelectorAll(".mod.open"), function (x) { x.classList.remove("open"); });
