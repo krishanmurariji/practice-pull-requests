@@ -75,15 +75,50 @@
     : '<h1>' + pageTitle + '</h1>';
   var head = body.dataset.nohead ? "" : '<div class="page-head' + (body.dataset.compact ? " compact" : "") + (body.dataset.ruled ? " ruled" : "") + '">' + titleHtml + '<div class="actions" id="head-actions"></div></div>';
 
+  /* ---- the second panel (Metronic style): company, search, and the pages of the chosen module ---- */
+  var PAGE_ICONS = { "dashboard": "dashboard", "job-openings": "briefcase", "open-jobs": "globe", "candidates": "users", "interviews": "calendar", "pipeline": "layers", "survey": "list" };
+  var PANEL_GROUPS = { recruitment: [["", ["dashboard"]], ["Hiring", ["job-openings", "open-jobs", "candidates", "interviews", "pipeline"]], ["Feedback", ["survey"]]] };
+  function panelItem(it, m) {
+    var on = m.id === moduleId && it.id === pageId, ic = PAGE_ICONS[it.id] || (/dashboard/i.test(it.label) ? "dashboard" : "file");
+    var tail = it.count ? '<span class="pn-count">' + it.count + '</span>' : "";
+    return it.href
+      ? '<a class="pn-item' + (on ? " on" : "") + '" href="' + it.href + '">' + iconLine(ic) + '<span class="pn-label">' + it.label + '</span>' + tail + '</a>'
+      : '<span class="pn-item off" title="Not designed in this prototype">' + iconLine(ic) + '<span class="pn-label">' + it.label + '</span></span>';
+  }
+  function panelBody(m) {
+    var groups = PANEL_GROUPS[m.id], html = '<div class="pn-title">' + m.label + '</div>';
+    if (!groups) { return html + m.items.map(function (it) { return panelItem(it, m); }).join(""); }
+    return html + groups.map(function (g, i) {
+      var items = g[1].map(function (id) { return m.items.filter(function (x) { return x.id === id; })[0]; }).filter(Boolean);
+      return '<div class="pn-group' + (i ? " ruled" : "") + '">' + (g[0] ? '<div class="pn-head">' + g[0] + '</div>' : "") + items.map(function (it) { return panelItem(it, m); }).join("") + '</div>';
+    }).join("");
+  }
+  function panelHtml(m) {
+    return '<div class="sb-panel" id="sbPanel"><button class="pn-co" type="button" data-pop="company" aria-label="Company"><span class="pn-mark">' + DEMO.company.name.charAt(0) + '</span><span class="pn-name">' + DEMO.company.short + '</span>' + icon("updown", "sm") + '</button>' +
+      '<button class="pn-search" type="button" data-do="search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
+      '<nav class="pn-menu" id="pnMenu" aria-label="' + m.label + ' pages">' + panelBody(m) + '</nav></div>';
+  }
+
   /* ---- assemble ---- */
   var app = document.createElement("div");
   app.className = "app";
-  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + head + '</div></div>';
+  app.innerHTML = '<div class="sb-slot"><aside class="sb" id="sb">' + sidebarHtml() + '</aside>' + panelHtml(mod) + '<button class="sb-toggle" id="sbToggle" type="button">' + icon("sidebar", "sm") + '</button></div><div class="main"><div class="m-top"><button data-act="menu" aria-label="Open menu">' + icon("menu", "lg") + '</button><span class="emblem" style="--e:1.875rem"></span><b>Ariel HR</b></div><div class="content" id="content">' + head + '</div></div>';
   body.insertBefore(app, main);
   document.getElementById("content").appendChild(main);
   /* move the real buttons (not a copy), so the click handlers the page attached keep working */
   if (actions) { var ha = document.getElementById("head-actions"); while (actions.firstChild) { ha.appendChild(actions.firstChild); } }
   var sb = document.getElementById("sb"), menu = document.getElementById("sbMenu");
+
+  /* ---- the small box button on the sidebar edge opens / closes the second panel ---- */
+  var panelOpen = store("ariel-sb-panel") !== "0" && !small;
+  var tgl = document.getElementById("sbToggle");
+  function setPanel(on, quiet) {
+    panelOpen = on; app.classList.toggle("panel-open", on);
+    tgl.setAttribute("aria-pressed", on ? "true" : "false"); tgl.setAttribute("aria-label", on ? "Close the menu panel" : "Open the menu panel"); tgl.title = on ? "Close the menu panel" : "Open the menu panel";
+    if (!quiet) { store("ariel-sb-panel", on ? "1" : "0"); }
+    if (on) { hideFly(); }
+  }
+  tgl.addEventListener("click", function () { closePop(); setPanel(!panelOpen); });
 
   /* ---- the strip is icon-only (Metronic layout 3): names show as a dark tag on hover; on a small screen the burger opens it with names ---- */
   var leaveTimer = null, tipEl = null, flyEl = null, flyAnchor = null, flyTimer = null;
@@ -119,7 +154,7 @@
     var t = e.target.closest(".sb [data-tip]");
     if (!t) { hideTip(); if (flyEl) { dropFly(); } return; }
     var m = t.dataset.modbtn ? MODULES.filter(function (x) { return x.id === t.dataset.modbtn; })[0] : null;
-    if (m && m.items.length) { showFly(t, m); } else { hideFly(); showTip(t); }
+    if (m && m.items.length && !panelOpen) { showFly(t, m); } else { hideFly(); showTip(t); }
   });
   document.addEventListener("click", function (e) { hideTip(); if (!e.target.closest(".fly")) { hideFly(); } }, true);
 
@@ -133,6 +168,7 @@
   window.addEventListener("resize", function () { small = window.innerWidth <= 720; fade(); closePop(); });
   fade();
   var cur = menu.querySelector(".mod-btn.on"); if (cur) { menu.scrollTop = Math.max(0, cur.offsetTop - 120); fade(); }
+  setPanel(panelOpen, true);
 
   /* ---- popovers ---- */
   var pop = null;   // { kind, anchor, el }
@@ -196,7 +232,7 @@
     var mb = t.closest("[data-modbtn]");
     if (mb && !small) {
       var mm2 = MODULES.filter(function (x) { return x.id === mb.dataset.modbtn; })[0], first = mm2 && mm2.items.filter(function (i) { return i.href; })[0];
-      if (first) { location.href = first.href; } else { toast(mm2.label + ": these pages are not designed in this prototype yet"); }
+      if (first) { location.href = first.href; } else { if (panelOpen) { document.getElementById("pnMenu").innerHTML = panelBody(mm2); } toast(mm2.label + ": these pages are not designed in this prototype yet"); }
       return;
     }
     if (mb) {
