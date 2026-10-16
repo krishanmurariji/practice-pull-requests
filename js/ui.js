@@ -52,7 +52,7 @@ function avatarFace(name) {
   var photo = (typeof DEMO !== "undefined" && DEMO.photos || {})[name];
   if (photo) { return { bg: "var(--surface-2)", html: '<img src="' + photo + '" alt="">', pic: true }; }
   if (avatarMode() === "initials") { return { bg: AV_COLORS[hash(name) % AV_COLORS.length], html: initials(name), pic: false }; }
-  return { bg: PORTRAIT_BG[hash(name + "|4") % PORTRAIT_BG.length], html: portraitSvg(name), pic: true };
+  return { bg: "var(--surface-2)", html: '<img src="assets/people/p' + (1 + hash(name) % 7) + '.jpg" alt="">', pic: true };   // the same person always gets the same photo
 }
 function avatar(name, size) {
   var f = avatarFace(name);
