@@ -1,0 +1,76 @@
+/* =====================================================================
+   LAYOUT "METRONIC DEMO 1": full sidebar with sections and accordion modules, a box button on its
+   edge that folds it to icons, and a top bar with the page menu, search, notifications and profile.
+   Loaded only when the layout is switched on (js/layout-demo1.js).
+   ===================================================================== */
+.app.l-demo1 { --d1-w: 16.5rem; grid-template-columns: var(--d1-w) minmax(0, 1fr); transition: grid-template-columns 0.2s ease; }
+.app.l-demo1.d1-folded { --d1-w: 5.25rem; }
+.l-demo1 .sb-slot, .l-demo1 .m-top { display: none; }
+
+/* ---- sidebar ---- */
+.d1-sb { position: sticky; top: 0; height: 100vh; z-index: 40; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--line); overflow: hidden; }
+.d1-logo { display: flex; align-items: center; flex: none; height: 4.25rem; padding: 0 1.5rem; }
+.d1-logo img.full { height: 2.5rem; width: auto; }
+.d1-logo .mini { display: none; }
+.d1-menu { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0.375rem 1rem 1.5rem; scrollbar-width: thin; }
+.d1-sec { padding: 1.125rem 0.75rem 0.375rem; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.d1-item { display: flex; align-items: center; gap: 0.875rem; width: 100%; height: 2.75rem; padding: 0 0.75rem; border: 0; border-radius: 0.5rem; background: none; color: var(--ink); font-size: var(--fs-md); font-weight: 500; text-align: left; text-decoration: none; }
+.d1-item:hover { background: var(--surface-2); text-decoration: none; }
+.d1-item svg.i { width: 1.25rem; height: 1.25rem; flex: none; color: var(--ink-2); }
+.d1-item.on, .d1-item.on svg.i { color: var(--brand); }
+.d1-lbl { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d1-item svg.d1-chev { width: 0.875rem; height: 0.875rem; color: var(--ink-3); transition: transform 0.15s; }
+.d1-mod.open > .d1-item svg.d1-chev { transform: rotate(180deg); }
+.d1-subs { display: none; padding: 0.125rem 0 0.375rem; }
+.d1-mod.open > .d1-subs { display: block; }
+.d1-sub { display: block; padding: 0.5rem 0.75rem 0.5rem 2.875rem; border-radius: 0.5rem; color: var(--ink-2); font-size: var(--fs-md); text-decoration: none; white-space: nowrap; }
+a.d1-sub:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.d1-sub.on { color: var(--brand); font-weight: 600; }
+.d1-sub.off { color: var(--ink-3); cursor: default; }
+
+/* the small box button on the sidebar edge */
+.d1-toggle { position: fixed; z-index: 45; top: 1.375rem; left: calc(var(--d1-w) - 0.875rem); width: 1.75rem; height: 1.75rem; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 0.5rem; background: var(--surface); color: var(--ink-2); box-shadow: var(--shadow-sm); transition: left 0.2s ease, color 0.15s, border-color 0.15s; }
+.d1-toggle:hover { color: var(--ink); border-color: var(--ink-3); }
+.d1-toggle svg { width: 0.9375rem; height: 0.9375rem; }
+.d1-folded .d1-toggle svg { transform: scaleX(-1); }
+
+/* ---- folded: icons only ---- */
+.d1-folded .d1-logo { justify-content: center; padding: 0; }
+.d1-folded .d1-logo .full { display: none; }
+.d1-folded .d1-logo .mini { display: block; }
+.d1-folded .d1-menu { padding: 0.375rem 1.25rem 1.5rem; }
+.d1-folded .d1-item { justify-content: center; width: 2.75rem; padding: 0; margin: 0 auto; }
+.d1-folded .d1-item.on { background: var(--brand-soft); }
+.d1-folded .d1-lbl, .d1-folded .d1-item svg.d1-chev { display: none; }
+.d1-folded .d1-subs { display: none !important; }
+.d1-folded .d1-sec { padding: 0.625rem 0 0.25rem; text-align: center; line-height: 1; }
+.d1-folded .d1-sec span { display: none; }
+.d1-folded .d1-sec::before { content: "..."; letter-spacing: 0.1em; }
+
+/* ---- top bar ---- */
+.d1-top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 1rem; height: 4.25rem; padding: 0 1.5rem 0 2.25rem; background: var(--surface); border-bottom: 1px solid var(--line); }
+.d1-burger { display: none; width: 2.5rem; height: 2.5rem; flex: none; border: 1px solid var(--line); border-radius: 0.625rem; background: var(--surface); color: var(--ink); place-items: center; }
+.d1-nav { display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.d1-nav::-webkit-scrollbar { display: none; }
+.d1-link { display: flex; align-items: center; height: 2.5rem; padding: 0 0.875rem; border-radius: 0.5rem; color: var(--ink); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; text-decoration: none; }
+a.d1-link:hover { color: var(--brand); text-decoration: none; }
+.d1-link.on { color: var(--brand); background: var(--brand-soft); font-weight: 600; }
+.d1-link.off { color: var(--ink-3); cursor: default; }
+.d1-tools { margin-left: auto; display: flex; align-items: center; gap: 0.375rem; flex: none; }
+.d1-ib { position: relative; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-2); display: grid; place-items: center; }
+.d1-ib:hover { background: var(--surface-2); color: var(--ink); }
+.d1-ib svg.i { width: 1.25rem; height: 1.25rem; }
+.d1-ib .badge { position: absolute; top: 0.125rem; right: 0.125rem; min-width: 1rem; height: 1rem; padding: 0 0.1875rem; box-sizing: border-box; border: 2px solid var(--surface); border-radius: 6.1875rem; background: var(--bad); color: #fff; font-size: 0.56rem; font-weight: 700; display: grid; place-items: center; }
+.d1-me { width: 2.5rem; height: 2.5rem; margin-left: 0.25rem; padding: 0; border: 2px solid var(--good); border-radius: 50%; background: none; overflow: hidden; display: grid; place-items: center; }
+.d1-me .av { --s: 2.0625rem; }
+.d1-me img.av-img { object-fit: cover; }
+
+/* ---- small screens: the sidebar slides in from the left ---- */
+@media (max-width: 720px) {
+  .app.l-demo1 { grid-template-columns: minmax(0, 1fr); }
+  .d1-sb { position: fixed; left: 0; top: 0; bottom: 0; width: 16.5rem; transform: translateX(-102%); transition: transform 0.2s; box-shadow: var(--shadow-lg); }
+  .app.d1-open .d1-sb { transform: none; }
+  .d1-toggle { display: none; }
+  .d1-burger { display: grid; }
+  .d1-top { padding: 0 0.875rem; gap: 0.625rem; }
+}

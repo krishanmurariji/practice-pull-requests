@@ -176,6 +176,7 @@
     var seg = function (name, opts, cur) { return '<div class="seg full" data-seg="' + name + '">' + opts.map(function (o) { return '<button data-v="' + o[0] + '" class="' + (cur === o[0] ? "on" : "") + '">' + (o[2] ? icon(o[2], "sm") : "") + o[1] + '</button>'; }).join("") + '</div>'; };
     return '<h4>Appearance</h4><section class="set"><label>Theme</label>' + seg("theme", [["light", "Light", "sun"], ["dark", "Dark", "moon"], ["system", "Auto", "monitor"]], th) + '</section>' +
       '<section class="set"><label>Accent colour</label><div class="swatches">' + ACCENTS.map(function (a) { return '<button class="swatch' + (a.id === ac ? " on" : "") + '" data-accent="' + a.id + '" style="--sw:' + a.l + '" aria-label="' + a.name + '" title="' + a.name + '">' + icon("check") + '</button>'; }).join("") + '</div></section>' +
+      '<section class="set"><label>Layout</label>' + seg("layout", [["classic", "Classic"], ["demo1", "Metronic"]], store("ariel-layout") === "demo1" ? "demo1" : "classic") + '</section>' +
       '<section class="set"><label>Interface size</label>' + seg("scale", [["70", "Small"], ["80", "Default"], ["100", "Large"]], ["70", "100"].indexOf(store("ariel-scale")) >= 0 ? store("ariel-scale") : "80") + '</section>' +
       '<section class="set"><label>Density</label>' + seg("density", [["comfortable", "Comfortable"], ["compact", "Compact"]], dn) + '</section>' +
       '<section class="set"><label>Profile pictures</label>' + seg("avatars", [["photo", "Pictures"], ["initials", "Initials"]], avatarMode()) + '</section>' +
@@ -205,6 +206,13 @@
     return "";
   }
   function place(el, anchor) {
+    var hd = anchor.closest && anchor.closest(".d1-top");
+    if (hd) {
+      var r0 = anchor.getBoundingClientRect();
+      el.style.top = (r0.bottom + 8) + "px"; el.style.bottom = "auto";
+      el.style.left = Math.max(8, Math.min(window.innerWidth - el.offsetWidth - 8, r0.right - el.offsetWidth)) + "px";
+      return;
+    }
     var r = anchor.getBoundingClientRect();
     el.style.left = (document.querySelector(".sb-slot").getBoundingClientRect().width + 8) + "px";
     if (r.top > window.innerHeight * 0.45) { el.style.bottom = Math.max(12, window.innerHeight - r.bottom) + "px"; el.style.top = "auto"; }
@@ -253,6 +261,7 @@
     var seg = t.closest("[data-seg] button");
     if (seg) {
       var name = seg.parentNode.dataset.seg, v = seg.dataset.v;
+      if (name === "layout") { store("ariel-layout", v === "demo1" ? "demo1" : null); location.reload(); return; }
       if (name === "theme") { store("ariel-theme", v === "system" ? null : v); }
       if (name === "scale") { store("ariel-scale", v === "80" ? null : v); }
       if (name === "density") { store("ariel-density", v === "compact" ? "compact" : null); }
@@ -275,7 +284,7 @@
     if (what === "myprofile") { closePop(); toast("Opens your employee profile (demo)"); }
     if (what === "cache") { closePop(); toast("Cache cleared"); }
     if (what === "signout") { closePop(); location.href = "login.html"; }
-    if (what === "readall") { document.querySelectorAll(".pop .note").forEach(function (n) { n.classList.remove("unread"); }); unread = 0; var bd = document.querySelector(".sb-bell .badge"); if (bd) { bd.remove(); } }
+    if (what === "readall") { document.querySelectorAll(".pop .note").forEach(function (n) { n.classList.remove("unread"); }); unread = 0; [].forEach.call(document.querySelectorAll(".sb-bell .badge, .d1-ib .badge"), function (b) { b.remove(); }); }
     if (what === "password") {
       closePop();
       var mm = openModal({ title: "Reset password", body: '<div class="form-grid"><div class="full"><label class="lbl">Current password</label><input class="input" type="password" autocomplete="current-password"></div><div><label class="lbl">New password</label><input class="input" type="password" autocomplete="new-password"></div><div><label class="lbl">Confirm password</label><input class="input" type="password" autocomplete="new-password"></div></div><p class="hint">Use at least 12 characters.</p>', foot: '<button class="btn" data-close>Cancel</button><button class="btn primary" data-close id="pw">Update password</button>' });
@@ -325,4 +334,14 @@
     back.addEventListener("click", function (e) { if (e.target === back) { back.remove(); } });
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") { var a = ul.querySelector("a"); if (a) { go(a.getAttribute("href")); } } if (e.key === "Escape") { back.remove(); } });
   }
+
+  /* alternate layout: Appearance > Layout > Metronic, or add ?layout=demo1 (and ?layout=classic to go back) */
+  (function () {
+    var q = new URLSearchParams(location.search).get("layout");
+    if (q) { store("ariel-layout", q === "demo1" ? "demo1" : null); }
+    if (store("ariel-layout") === "demo1") {
+      var l = document.createElement("link"); l.rel = "stylesheet"; l.href = "css/layout-demo1.css"; document.head.appendChild(l);
+      var sc = document.createElement("script"); sc.src = "js/layout-demo1.js"; document.body.appendChild(sc);
+    }
+  })();
 })();
