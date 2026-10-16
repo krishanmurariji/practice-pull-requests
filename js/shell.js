@@ -93,7 +93,7 @@
     }).join("");
   }
   function panelHtml(m) {
-    return '<div class="sb-panel" id="sbPanel"><a class="pn-logo" href="index.html" aria-label="Ariel Software Solutions"><img class="logo-img" src="assets/ariel-logo.webp" alt="Ariel Software Solutions"></a>' +
+    return '<div class="sb-panel" id="sbPanel"><a class="pn-logo" href="index.html" aria-label="Ariel Software Solutions"><img class="logo-img" src="assets/ariel-logo-sm.png" alt="Ariel Software Solutions"></a>' +
       '<button class="pn-search" type="button" data-do="search">' + icon("search", "sm") + '<span>Search</span><kbd class="kbd">Ctrl K</kbd></button>' +
       '<nav class="pn-menu" id="pnMenu" aria-label="' + m.label + ' pages">' + panelBody(m) + '</nav></div>';
   }
