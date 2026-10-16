@@ -189,3 +189,6 @@ a.fi:hover { background: var(--surface-2); color: var(--ink); text-decoration: n
   .sb-user .status { left: 1.75rem; bottom: 0.25rem; }
   .sb-bell:hover, .sb-user:hover { background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
 }
+
+/* never let the icon circles squash into ovals when the window is short: the strip scrolls instead */
+.sb-menu .mod-btn, .sb-bell, .sb-user, .sb-emblem { flex: none; }
