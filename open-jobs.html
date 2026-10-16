@@ -141,7 +141,7 @@
   [].forEach.call(document.querySelectorAll("[data-i]"), function (n) { n.outerHTML = icon(n.dataset.i, n.dataset.c); });
   var open = DEMO.jobs.filter(function (j) { return j.status === "open" && j.published !== false; });
   var depts = ["All"].concat(open.map(function (j) { return j.dept; }).filter(function (d, i, a) { return a.indexOf(d) === i; }));
-  var PAL = { "Development": ["#2563eb", "#38bdf8"], "Designing": ["#7c3aed", "#c084fc"], "Human Resource": ["#0d9488", "#5eead4"], "Accounts": ["#d97706", "#fbbf24"], "Business Development": ["#db2777", "#fb7185"] };
+  var PAL = { "Development": ["#2563eb", "#38bdf8"], "Designing": ["#0284c7", "#7dd3fc"], "Human Resource": ["#0d9488", "#5eead4"], "Accounts": ["#d97706", "#fbbf24"], "Business Development": ["#db2777", "#fb7185"] };
   var pal = function (d) { return PAL[d] || ["#2563eb", "#38bdf8"]; };
   var state = { d: "All", q: "" };
   var daysTo = function (iso) { return Math.round((new Date(iso + "T12:00:00") - new Date(DEMO.today + "T12:00:00")) / 86400000); };

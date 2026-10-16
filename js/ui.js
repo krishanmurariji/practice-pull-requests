@@ -13,7 +13,7 @@ function iconLine(name, cls) {
 }
 
 /* deterministic colour per name */
-var AV_COLORS = ["#1597e5", "#6552d0", "#1a8f5a", "#e08a1e", "#cf3d2c", "#0f8f8f", "#a5489c", "#4b6cb7"];
+var AV_COLORS = ["#1597e5", "#2b57c8", "#1a8f5a", "#e08a1e", "#cf3d2c", "#0f8f8f", "#a5489c", "#4b6cb7"];
 function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; } return h; }
 function initials(name) { var p = name.split(" "); return (p[0][0] + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase(); }
 /* ---- profile pictures ------------------------------------------------------

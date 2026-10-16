@@ -74,7 +74,7 @@ var DEMO = {
   stages: [
     { id: "applied",   label: "Applied",   color: "#8593a4" },
     { id: "initial",   label: "Initial",   color: "#1597e5" },
-    { id: "test",      label: "Test",      color: "#6552d0" },
+    { id: "test",      label: "Test",      color: "#2b57c8" },
     { id: "interview", label: "Interview", color: "#e08a1e" },
     { id: "offer",     label: "Offer",     color: "#0f8f8f" },
     { id: "hired",     label: "Hired",     color: "#1a8f5a" },
@@ -195,7 +195,6 @@ var ACCENTS = [
   { id: "ink",    name: "Ink",    l: "#101828", d: "#e9eef7" },
   { id: "green",  name: "Green",  l: "#12805c", d: "#4ccf9e" },
   { id: "teal",   name: "Teal",   l: "#0e8f8f", d: "#55d0d0" },
-  { id: "violet", name: "Violet", l: "#6552d0", d: "#a597f2" },
   { id: "orange", name: "Orange", l: "#d9731a", d: "#f2a257" },
   { id: "rose",   name: "Rose",   l: "#d6457a", d: "#f08ab0" }
 ];
