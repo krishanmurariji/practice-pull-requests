@@ -179,15 +179,15 @@ a.fi:hover { background: var(--surface-2); color: var(--ink); text-decoration: n
   .mod-btn { width: 2.75rem; height: 2.75rem; padding: 0; justify-content: center; border-radius: 50%; position: relative; }
   .mod-btn .lbl, .mod-btn .chev { display: none; }
   .subs { display: none !important; }
-  .mod-btn:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
-  .mod-btn.on, .mod-btn.on:hover { background: var(--ink); color: var(--surface); box-shadow: none; }
+  .mod-btn:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand); }
+  .mod-btn.on, .mod-btn.on:hover { background: var(--brand); color: var(--brand-ink); box-shadow: none; }
   .mod-btn.on::before { display: none; }
   .sb-bottom { align-items: center; margin-top: 1rem; }
   .sb-bell, .sb-user { width: 2.75rem; height: 2.75rem; padding: 0; justify-content: center; border-radius: 50%; }
   .sb-user .who { display: none; }
   .sb-user .av { --s: 2rem; }
   .sb-user .status { left: 1.75rem; bottom: 0.25rem; }
-  .sb-bell:hover, .sb-user:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .sb-bell:hover, .sb-user:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--brand); }
 }
 
 /* never let the icon circles squash into ovals when the window is short: the strip scrolls instead */
